@@ -1,0 +1,23 @@
+{
+  "source": "e2ewtq",
+  "dataset": "e2ewtq",
+  "base_edges": [
+    "similar_content"
+  ],
+  "edge_mode": "E2",
+  "subgraph_k": 20,
+  "results": {
+    "eval_count": 61,
+    "total": 61,
+    "edge_mode": "E2",
+    "subgraph_k": 20,
+    "Recall@1": 0.04918032786885246,
+    "Recall@5": 0.14754098360655737,
+    "Recall@10": 0.3114754098360656,
+    "MRR@k": 0.10796252927400468,
+    "nDCG@5": 0.10265343454332648,
+    "nDCG@10": 0.15428237727821698,
+    "Precision@5": 0.029508196721311473,
+    "Full Recall@5": 0.14754098360655737
+  }
+}

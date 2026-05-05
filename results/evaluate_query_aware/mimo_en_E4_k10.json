@@ -1,0 +1,20 @@
+{
+  "source": "mimo_en",
+  "dataset": "mimo_en",
+  "edge_mode": "E4",
+  "subgraph_k": 10,
+  "results": {
+    "eval_count": 63,
+    "total": 65,
+    "edge_mode": "E4",
+    "subgraph_k": 10,
+    "Recall@1": 0.36243386243386244,
+    "Recall@5": 0.5685185185185184,
+    "Recall@10": 0.7034391534391535,
+    "MRR@k": 0.5192428823381203,
+    "nDCG@5": 0.48875353365181434,
+    "nDCG@10": 0.5331807714798568,
+    "Precision@5": 0.13968253968253969,
+    "Full Recall@5": 0.47619047619047616
+  }
+}

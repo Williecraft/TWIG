@@ -1,0 +1,65 @@
+config,code,binary,label,num_edges,kept_edges,recall@1,recall@2,recall@5,recall@10,best_epoch,elapsed_min
+A0,0,000000,No edges,0,none,0.3978333333333333,0.0,0.5735,0.6916666666666665,12,0.2
+A1,1,000001,sc,1,shared_column_name,0.3836666666666666,0.0,0.5635000000000001,0.6563333333333332,23,0.2
+A2,2,000010,cc,1,similar_content,0.42450000000000004,0.0,0.5981666666666667,0.6835,17,0.2
+A3,3,000011,cc + sc,2,"similar_content, shared_column_name",0.3403333333333333,0.0,0.5751666666666666,0.6601666666666668,22,0.2
+A4,4,000100,sp,1,same_page,0.42033333333333334,0.0,0.5838333333333333,0.7011666666666667,15,0.2
+A5,5,000101,sp + sc,2,"same_page, shared_column_name",0.3328333333333333,0.0,0.5555,0.6273333333333334,7,0.2
+A6,6,000110,sp + cc,2,"same_page, similar_content",0.3903333333333333,0.0,0.5555,0.6525,22,0.2
+A7,7,000111,sp + cc + sc,3,"same_page, similar_content, shared_column_name",0.3778333333333333,0.0,0.5710000000000001,0.6726666666666667,16,0.2
+A8,8,001000,tp,1,comes_from,0.4378333333333334,0.0,0.6253333333333334,0.6978333333333333,9,0.2
+A9,9,001001,tp + sc,2,"comes_from, shared_column_name",0.4186666666666666,0.0,0.6210000000000001,0.7021666666666667,17,0.2
+A10,10,001010,tp + cc,2,"comes_from, similar_content",0.4028333333333333,0.0,0.6125,0.7,7,0.2
+A11,11,001011,tp + cc + sc,3,"comes_from, similar_content, shared_column_name",0.4103333333333333,0.0,0.6001666666666667,0.6693333333333333,11,0.2
+A12,12,001100,tp + sp,2,"comes_from, same_page",0.3828333333333333,0.0,0.5908333333333333,0.6958333333333334,9,0.2
+A13,13,001101,tp + sp + sc,3,"comes_from, same_page, shared_column_name",0.3861666666666666,0.0,0.5725000000000001,0.6708333333333334,7,0.2
+A14,14,001110,tp + sp + cc,3,"comes_from, same_page, similar_content",0.36283333333333334,0.0,0.6258333333333334,0.6633333333333334,6,0.2
+A15,15,001111,tp + sp + cc + sc,4,"comes_from, same_page, similar_content, shared_column_name",0.32366666666666666,0.0,0.5291666666666667,0.6295000000000001,6,0.2
+A16,16,010000,tc,1,has_column,0.4136666666666666,0.0,0.6271666666666667,0.6925,7,0.2
+A17,17,010001,tc + sc,2,"has_column, shared_column_name",0.4403333333333334,0.0,0.6030000000000001,0.6863333333333332,21,0.2
+A18,18,010010,tc + cc,2,"has_column, similar_content",0.45616666666666666,0.0,0.6021666666666666,0.685,8,0.2
+A19,19,010011,tc + cc + sc,3,"has_column, similar_content, shared_column_name",0.3936666666666666,0.0,0.6246666666666667,0.6804999999999999,14,0.2
+A20,20,010100,tc + sp,2,"has_column, same_page",0.3928333333333333,0.0,0.6018333333333333,0.6666666666666667,14,0.2
+A21,21,010101,tc + sp + sc,3,"has_column, same_page, shared_column_name",0.3911666666666666,0.0,0.6380000000000001,0.6628333333333333,12,0.2
+A22,22,010110,tc + sp + cc,3,"has_column, same_page, similar_content",0.3961666666666666,0.0,0.6058333333333333,0.6878333333333333,22,0.2
+A23,23,010111,tc + sp + cc + sc,4,"has_column, same_page, similar_content, shared_column_name",0.3728333333333333,0.0,0.6043333333333334,0.6953333333333334,11,0.2
+A24,24,011000,tc + tp,2,"has_column, comes_from",0.44366666666666676,0.0,0.5990000000000001,0.6838333333333333,18,0.2
+A25,25,011001,tc + tp + sc,3,"has_column, comes_from, shared_column_name",0.3678333333333333,0.0,0.5625,0.6831666666666666,6,0.2
+A26,26,011010,tc + tp + cc,3,"has_column, comes_from, similar_content",0.3895,0.0,0.6185,0.7008333333333333,13,0.2
+A27,27,011011,tc + tp + cc + sc,4,"has_column, comes_from, similar_content, shared_column_name",0.3445,0.0,0.5785000000000001,0.698,7,0.2
+A28,28,011100,tc + tp + sp,3,"has_column, comes_from, same_page",0.42283333333333334,0.0,0.6141666666666667,0.6941666666666667,7,0.2
+A29,29,011101,tc + tp + sp + sc,4,"has_column, comes_from, same_page, shared_column_name",0.3945,0.0,0.5875,0.6608333333333334,7,0.2
+A30,30,011110,tc + tp + sp + cc,4,"has_column, comes_from, same_page, similar_content",0.4003333333333333,0.0,0.6530000000000001,0.715,11,0.2
+A31,31,011111,tc + tp + sp + cc + sc,5,"has_column, comes_from, same_page, similar_content, shared_column_name",0.42283333333333334,0.0,0.5988333333333333,0.7075,15,0.2
+A32,32,100000,tt,1,similar_table,0.29949999999999993,0.0,0.5093333333333333,0.6021666666666666,14,0.2
+A33,33,100001,tt + sc,2,"similar_table, shared_column_name",0.3186666666666666,0.0,0.5298333333333334,0.5893333333333334,10,0.2
+A34,34,100010,tt + cc,2,"similar_table, similar_content",0.22533333333333336,0.0,0.48700000000000004,0.5868333333333333,7,0.2
+A35,35,100011,tt + cc + sc,3,"similar_table, similar_content, shared_column_name",0.3786666666666666,0.0,0.5796666666666667,0.6408333333333335,22,0.2
+A36,36,100100,tt + sp,2,"similar_table, same_page",0.35283333333333333,0.0,0.6293333333333334,0.6938333333333334,18,0.2
+A37,37,100101,tt + sp + sc,3,"similar_table, same_page, shared_column_name",0.3661666666666666,0.0,0.5630000000000001,0.6395000000000001,15,0.2
+A38,38,100110,tt + sp + cc,3,"similar_table, same_page, similar_content",0.4011666666666666,0.0,0.5801666666666666,0.6863333333333334,22,0.2
+A39,39,100111,tt + sp + cc + sc,4,"similar_table, same_page, similar_content, shared_column_name",0.3661666666666666,0.0,0.5730000000000001,0.648,28,0.2
+A40,40,101000,tt + tp,2,"similar_table, comes_from",0.3728333333333333,0.0,0.5905,0.6941666666666667,12,0.2
+A41,41,101001,tt + tp + sc,3,"similar_table, comes_from, shared_column_name",0.3353333333333333,0.0,0.5775000000000001,0.6825,14,0.2
+A42,42,101010,tt + tp + cc,3,"similar_table, comes_from, similar_content",0.3903333333333333,0.0,0.6255000000000001,0.6866666666666668,12,0.2
+A43,43,101011,tt + tp + cc + sc,4,"similar_table, comes_from, similar_content, shared_column_name",0.3728333333333333,0.0,0.5735000000000001,0.6718333333333334,10,0.2
+A44,44,101100,tt + tp + sp,3,"similar_table, comes_from, same_page",0.40176190476190476,0.0,0.5541904761904761,0.6570476190476191,25,0.2
+A45,45,101101,tt + tp + sp + sc,4,"similar_table, comes_from, same_page, shared_column_name",0.3636666666666666,0.0,0.5955,0.6555000000000001,9,0.2
+A46,46,101110,tt + tp + sp + cc,4,"similar_table, comes_from, same_page, similar_content",0.3753333333333333,0.0,0.5738333333333333,0.6778333333333333,9,0.2
+A47,47,101111,tt + tp + sp + cc + sc,5,"similar_table, comes_from, same_page, similar_content, shared_column_name",0.3253333333333333,0.0,0.5543333333333333,0.6486666666666667,7,0.2
+A48,48,110000,tt + tc,2,"similar_table, has_column",0.3986666666666666,0.0,0.5426666666666667,0.6918333333333334,16,0.2
+A49,49,110001,tt + tc + sc,3,"similar_table, has_column, shared_column_name",0.3128333333333333,0.0,0.5798333333333334,0.676,10,0.2
+A50,50,110010,tt + tc + cc,3,"similar_table, has_column, similar_content",0.3903333333333333,0.0,0.6168333333333333,0.6921666666666667,10,0.2
+A51,51,110011,tt + tc + cc + sc,4,"similar_table, has_column, similar_content, shared_column_name",0.3228333333333333,0.0,0.5535000000000001,0.6096666666666667,15,0.2
+A52,52,110100,tt + tc + sp,3,"similar_table, has_column, same_page",0.3353333333333333,0.0,0.5579999999999999,0.6300000000000001,10,0.2
+A53,53,110101,tt + tc + sp + sc,4,"similar_table, has_column, same_page, shared_column_name",0.387,0.0,0.5635000000000001,0.6521666666666667,11,0.2
+A54,54,110110,tt + tc + sp + cc,4,"similar_table, has_column, same_page, similar_content",0.3403333333333333,0.0,0.5655,0.6888333333333334,11,0.2
+A55,55,110111,tt + tc + sp + cc + sc,5,"similar_table, has_column, same_page, similar_content, shared_column_name",0.3953333333333333,0.0,0.5793333333333334,0.6705,22,0.2
+A56,56,111000,tt + tc + tp,3,"similar_table, has_column, comes_from",0.3686666666666667,0.0,0.5438333333333333,0.6525,6,0.2
+A57,57,111001,tt + tc + tp + sc,4,"similar_table, has_column, comes_from, shared_column_name",0.41533333333333333,0.0,0.5876666666666668,0.6946666666666667,17,0.2
+A58,58,111010,tt + tc + tp + cc,4,"similar_table, has_column, comes_from, similar_content",0.33699999999999997,0.0,0.5618333333333333,0.6785,5,0.2
+A59,59,111011,tt + tc + tp + cc + sc,5,"similar_table, has_column, comes_from, similar_content, shared_column_name",0.4053333333333333,0.0,0.6060000000000001,0.6905000000000001,15,0.2
+A60,60,111100,tt + tc + tp + sp,4,"similar_table, has_column, comes_from, same_page",0.42283333333333334,0.0,0.5930000000000001,0.6991666666666667,22,0.2
+A61,61,111101,tt + tc + tp + sp + sc,5,"similar_table, has_column, comes_from, same_page, shared_column_name",0.4011666666666666,0.0,0.5871666666666667,0.6938333333333334,12,0.2
+A62,62,111110,tt + tc + tp + sp + cc,5,"similar_table, has_column, comes_from, same_page, similar_content",0.3761666666666666,0.0,0.6155,0.7041666666666667,11,0.2
+A63,63,111111,tt + tc + tp + sp + cc + sc,6,"similar_table, has_column, comes_from, same_page, similar_content, shared_column_name",0.3786666666666666,0.0,0.6255,0.6733333333333335,11,0.2

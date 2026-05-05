@@ -6,3 +6,8 @@ env/
 config/api_keys.json
 data/processed
 data/table
+data/downloads
+checkpoints/
+*.pdf
+*.docx
+reports/*.log

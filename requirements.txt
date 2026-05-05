@@ -4,6 +4,5 @@ sentence-transformers
 google-genai
 pandas
 tabulate
-pymilvus
-milvus-lite
 hyperopt
+matplotlib

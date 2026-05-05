@@ -1,0 +1,793 @@
+{
+  "experiment": "Cross-Dataset Generalization Evaluation",
+  "timestamp": "2026-03-24T01:39:07.257885",
+  "best_edge_configs": {
+    "feta": [
+      "similar_table",
+      "has_column",
+      "comes_from",
+      "same_page",
+      "shared_column_name"
+    ],
+    "ottqa": [
+      "comes_from",
+      "same_page",
+      "similar_content",
+      "shared_column_name"
+    ],
+    "mimo_en": [
+      "similar_table",
+      "comes_from",
+      "same_page",
+      "shared_column_name"
+    ],
+    "mimo_ch": [
+      "has_column",
+      "comes_from",
+      "same_page",
+      "similar_content"
+    ],
+    "e2ewtq": [
+      "has_column",
+      "shared_column_name"
+    ],
+    "mmqa": [
+      "has_column",
+      "comes_from",
+      "similar_content",
+      "shared_column_name"
+    ]
+  },
+  "results": [
+    {
+      "train_dataset": "feta",
+      "test_dataset": "feta",
+      "eval_count": 501,
+      "total_queries": 501,
+      "best_edges": [
+        "similar_table",
+        "has_column",
+        "comes_from",
+        "same_page",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.4171656686626746,
+      "TWIG_R@5": 0.6147704590818364,
+      "TWIG_R@10": 0.688622754491018,
+      "TWIG_MRR": 0.5024316446472135,
+      "QA_R@1": 0.8662674650698603,
+      "QA_R@5": 0.908183632734531,
+      "QA_R@10": 0.9161676646706587,
+      "QA_MRR": 0.8841753001932642,
+      "QA_nDCG@10": 0.8920205016164814
+    },
+    {
+      "train_dataset": "feta",
+      "test_dataset": "ottqa",
+      "eval_count": 554,
+      "total_queries": 554,
+      "best_edges": [
+        "similar_table",
+        "has_column",
+        "comes_from",
+        "same_page",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.37906137184115524,
+      "TWIG_R@5": 0.6353790613718412,
+      "TWIG_R@10": 0.7364620938628159,
+      "TWIG_MRR": 0.48977064351613075,
+      "QA_R@1": 0.7725631768953068,
+      "QA_R@5": 0.9169675090252708,
+      "QA_R@10": 0.9368231046931408,
+      "QA_MRR": 0.8371833992321356,
+      "QA_nDCG@10": 0.8619261541334715
+    },
+    {
+      "train_dataset": "feta",
+      "test_dataset": "mimo_en",
+      "eval_count": 63,
+      "total_queries": 65,
+      "best_edges": [
+        "similar_table",
+        "has_column",
+        "comes_from",
+        "same_page",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.005291005291005291,
+      "TWIG_R@5": 0.10582010582010581,
+      "TWIG_R@10": 0.20634920634920634,
+      "TWIG_MRR": 0.07153565129755607,
+      "QA_R@1": 0.06878306878306878,
+      "QA_R@5": 0.2066137566137566,
+      "QA_R@10": 0.39153439153439157,
+      "QA_MRR": 0.16257873519778282,
+      "QA_nDCG@10": 0.21314309293808387
+    },
+    {
+      "train_dataset": "feta",
+      "test_dataset": "mimo_ch",
+      "eval_count": 100,
+      "total_queries": 100,
+      "best_edges": [
+        "similar_table",
+        "has_column",
+        "comes_from",
+        "same_page",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.03866666666666667,
+      "TWIG_R@5": 0.07316666666666667,
+      "TWIG_R@10": 0.11066666666666666,
+      "TWIG_MRR": 0.08874603174603174,
+      "QA_R@1": 0.06,
+      "QA_R@5": 0.17116666666666666,
+      "QA_R@10": 0.2121666666666667,
+      "QA_MRR": 0.14362301587301585,
+      "QA_nDCG@10": 0.1467924222552452
+    },
+    {
+      "train_dataset": "feta",
+      "test_dataset": "e2ewtq",
+      "eval_count": 61,
+      "total_queries": 61,
+      "best_edges": [
+        "similar_table",
+        "has_column",
+        "comes_from",
+        "same_page",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.22950819672131148,
+      "TWIG_R@5": 0.5737704918032787,
+      "TWIG_R@10": 0.6557377049180327,
+      "TWIG_MRR": 0.3613583138173302,
+      "QA_R@1": 0.6065573770491803,
+      "QA_R@5": 0.8360655737704918,
+      "QA_R@10": 0.9016393442622951,
+      "QA_MRR": 0.6994535519125683,
+      "QA_nDCG@10": 0.7483179325592643
+    },
+    {
+      "train_dataset": "feta",
+      "test_dataset": "mmqa",
+      "eval_count": 248,
+      "total_queries": 248,
+      "best_edges": [
+        "similar_table",
+        "has_column",
+        "comes_from",
+        "same_page",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.07123655913978495,
+      "TWIG_R@5": 0.21102150537634407,
+      "TWIG_R@10": 0.33481182795698927,
+      "TWIG_MRR": 0.25563716077829,
+      "QA_R@1": 0.21196236559139792,
+      "QA_R@5": 0.5071236559139783,
+      "QA_R@10": 0.607258064516129,
+      "QA_MRR": 0.6011728750640041,
+      "QA_nDCG@10": 0.5108458922560186
+    },
+    {
+      "train_dataset": "ottqa",
+      "test_dataset": "feta",
+      "eval_count": 501,
+      "total_queries": 501,
+      "best_edges": [
+        "comes_from",
+        "same_page",
+        "similar_content",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.3912175648702595,
+      "TWIG_R@5": 0.6207584830339321,
+      "TWIG_R@10": 0.7125748502994012,
+      "TWIG_MRR": 0.4935248550518012,
+      "QA_R@1": 0.7984031936127745,
+      "QA_R@5": 0.908183632734531,
+      "QA_R@10": 0.9301397205588823,
+      "QA_MRR": 0.8475208313531666,
+      "QA_nDCG@10": 0.8677588151666243
+    },
+    {
+      "train_dataset": "ottqa",
+      "test_dataset": "ottqa",
+      "eval_count": 554,
+      "total_queries": 554,
+      "best_edges": [
+        "comes_from",
+        "same_page",
+        "similar_content",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.5703971119133574,
+      "TWIG_R@5": 0.779783393501805,
+      "TWIG_R@10": 0.8646209386281588,
+      "TWIG_MRR": 0.6621869806887858,
+      "QA_R@1": 0.796028880866426,
+      "QA_R@5": 0.9548736462093863,
+      "QA_R@10": 0.9747292418772563,
+      "QA_MRR": 0.8685992206750328,
+      "QA_nDCG@10": 0.8950748704356688
+    },
+    {
+      "train_dataset": "ottqa",
+      "test_dataset": "mimo_en",
+      "eval_count": 63,
+      "total_queries": 65,
+      "best_edges": [
+        "comes_from",
+        "same_page",
+        "similar_content",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.09523809523809523,
+      "TWIG_R@5": 0.20555555555555555,
+      "TWIG_R@10": 0.33544973544973544,
+      "TWIG_MRR": 0.1668997228521038,
+      "QA_R@1": 0.13412698412698412,
+      "QA_R@5": 0.20264550264550263,
+      "QA_R@10": 0.39285714285714285,
+      "QA_MRR": 0.21550768455530353,
+      "QA_nDCG@10": 0.25321346480731166
+    },
+    {
+      "train_dataset": "ottqa",
+      "test_dataset": "mimo_ch",
+      "eval_count": 100,
+      "total_queries": 100,
+      "best_edges": [
+        "comes_from",
+        "same_page",
+        "similar_content",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.03666666666666667,
+      "TWIG_R@5": 0.19333333333333333,
+      "TWIG_R@10": 0.26209523809523805,
+      "TWIG_MRR": 0.12753968253968254,
+      "QA_R@1": 0.06916666666666667,
+      "QA_R@5": 0.20616666666666664,
+      "QA_R@10": 0.31933333333333336,
+      "QA_MRR": 0.16446428571428565,
+      "QA_nDCG@10": 0.18876794640954894
+    },
+    {
+      "train_dataset": "ottqa",
+      "test_dataset": "e2ewtq",
+      "eval_count": 61,
+      "total_queries": 61,
+      "best_edges": [
+        "comes_from",
+        "same_page",
+        "similar_content",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.21311475409836064,
+      "TWIG_R@5": 0.5245901639344263,
+      "TWIG_R@10": 0.7049180327868853,
+      "TWIG_MRR": 0.35160031225604993,
+      "QA_R@1": 0.4918032786885246,
+      "QA_R@5": 0.7704918032786885,
+      "QA_R@10": 0.8360655737704918,
+      "QA_MRR": 0.6117876658860266,
+      "QA_nDCG@10": 0.6667987703743558
+    },
+    {
+      "train_dataset": "ottqa",
+      "test_dataset": "mmqa",
+      "eval_count": 248,
+      "total_queries": 248,
+      "best_edges": [
+        "comes_from",
+        "same_page",
+        "similar_content",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.14885752688172038,
+      "TWIG_R@5": 0.4321236559139785,
+      "TWIG_R@10": 0.5655241935483872,
+      "TWIG_MRR": 0.47796658986175117,
+      "QA_R@1": 0.26021505376344095,
+      "QA_R@5": 0.5868279569892472,
+      "QA_R@10": 0.7074596774193548,
+      "QA_MRR": 0.6874631976446491,
+      "QA_nDCG@10": 0.5974303772022194
+    },
+    {
+      "train_dataset": "mimo_en",
+      "test_dataset": "feta",
+      "eval_count": 501,
+      "total_queries": 501,
+      "best_edges": [
+        "similar_table",
+        "comes_from",
+        "same_page",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.001996007984031936,
+      "TWIG_R@5": 0.017964071856287425,
+      "TWIG_R@10": 0.029940119760479042,
+      "TWIG_MRR": 0.008283433133732537,
+      "QA_R@1": 0.007984031936127744,
+      "QA_R@5": 0.01996007984031936,
+      "QA_R@10": 0.033932135728542916,
+      "QA_MRR": 0.01294632956309603,
+      "QA_nDCG@10": 0.017732460193954035
+    },
+    {
+      "train_dataset": "mimo_en",
+      "test_dataset": "ottqa",
+      "eval_count": 554,
+      "total_queries": 554,
+      "best_edges": [
+        "similar_table",
+        "comes_from",
+        "same_page",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.005415162454873646,
+      "TWIG_R@5": 0.023465703971119134,
+      "TWIG_R@10": 0.039711191335740074,
+      "TWIG_MRR": 0.013070884190017763,
+      "QA_R@1": 0.0036101083032490976,
+      "QA_R@5": 0.023465703971119134,
+      "QA_R@10": 0.04151624548736462,
+      "QA_MRR": 0.0129706034038164,
+      "QA_nDCG@10": 0.019584451121719134
+    },
+    {
+      "train_dataset": "mimo_en",
+      "test_dataset": "mimo_en",
+      "eval_count": 63,
+      "total_queries": 65,
+      "best_edges": [
+        "similar_table",
+        "comes_from",
+        "same_page",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.3862433862433862,
+      "TWIG_R@5": 0.6002645502645502,
+      "TWIG_R@10": 0.6875661375661376,
+      "TWIG_MRR": 0.5498173343411438,
+      "QA_R@1": 0.41005291005291006,
+      "QA_R@5": 0.5764550264550264,
+      "QA_R@10": 0.7034391534391535,
+      "QA_MRR": 0.5687515747039557,
+      "QA_nDCG@10": 0.5601017550549273
+    },
+    {
+      "train_dataset": "mimo_en",
+      "test_dataset": "mimo_ch",
+      "eval_count": 100,
+      "total_queries": 100,
+      "best_edges": [
+        "similar_table",
+        "comes_from",
+        "same_page",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.14666666666666667,
+      "TWIG_R@5": 0.2275,
+      "TWIG_R@10": 0.2608333333333333,
+      "TWIG_MRR": 0.2095396825396825,
+      "QA_R@1": 0.11666666666666665,
+      "QA_R@5": 0.2225,
+      "QA_R@10": 0.30999999999999994,
+      "QA_MRR": 0.1957063492063492,
+      "QA_nDCG@10": 0.20986252974497085
+    },
+    {
+      "train_dataset": "mimo_en",
+      "test_dataset": "e2ewtq",
+      "eval_count": 61,
+      "total_queries": 61,
+      "best_edges": [
+        "similar_table",
+        "comes_from",
+        "same_page",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.0,
+      "TWIG_R@5": 0.06557377049180328,
+      "TWIG_R@10": 0.22950819672131148,
+      "TWIG_MRR": 0.03533047098620869,
+      "QA_R@1": 0.03278688524590164,
+      "QA_R@5": 0.08196721311475409,
+      "QA_R@10": 0.19672131147540983,
+      "QA_MRR": 0.065912047879261,
+      "QA_nDCG@10": 0.09574655366336941
+    },
+    {
+      "train_dataset": "mimo_en",
+      "test_dataset": "mmqa",
+      "eval_count": 248,
+      "total_queries": 248,
+      "best_edges": [
+        "similar_table",
+        "comes_from",
+        "same_page",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.008064516129032258,
+      "TWIG_R@5": 0.04112903225806451,
+      "TWIG_R@10": 0.0758736559139785,
+      "TWIG_MRR": 0.05318260368663594,
+      "QA_R@1": 0.017137096774193547,
+      "QA_R@5": 0.050873655913978494,
+      "QA_R@10": 0.09401881720430107,
+      "QA_MRR": 0.07683851766513057,
+      "QA_nDCG@10": 0.06094696190741684
+    },
+    {
+      "train_dataset": "mimo_ch",
+      "test_dataset": "feta",
+      "eval_count": 501,
+      "total_queries": 501,
+      "best_edges": [
+        "has_column",
+        "comes_from",
+        "same_page",
+        "similar_content"
+      ],
+      "TWIG_R@1": 0.003992015968063872,
+      "TWIG_R@5": 0.033932135728542916,
+      "TWIG_R@10": 0.0499001996007984,
+      "TWIG_MRR": 0.015177581345246013,
+      "QA_R@1": 0.0,
+      "QA_R@5": 0.02594810379241517,
+      "QA_R@10": 0.05389221556886228,
+      "QA_MRR": 0.014111459620441654,
+      "QA_nDCG@10": 0.023317477150283587
+    },
+    {
+      "train_dataset": "mimo_ch",
+      "test_dataset": "ottqa",
+      "eval_count": 554,
+      "total_queries": 554,
+      "best_edges": [
+        "has_column",
+        "comes_from",
+        "same_page",
+        "similar_content"
+      ],
+      "TWIG_R@1": 0.007220216606498195,
+      "TWIG_R@5": 0.05595667870036101,
+      "TWIG_R@10": 0.08664259927797834,
+      "TWIG_MRR": 0.027604435275915416,
+      "QA_R@1": 0.016245487364620937,
+      "QA_R@5": 0.05595667870036101,
+      "QA_R@10": 0.0812274368231047,
+      "QA_MRR": 0.03060211449200618,
+      "QA_nDCG@10": 0.042338088816822536
+    },
+    {
+      "train_dataset": "mimo_ch",
+      "test_dataset": "mimo_en",
+      "eval_count": 63,
+      "total_queries": 65,
+      "best_edges": [
+        "has_column",
+        "comes_from",
+        "same_page",
+        "similar_content"
+      ],
+      "TWIG_R@1": 0.11428571428571428,
+      "TWIG_R@5": 0.3164021164021164,
+      "TWIG_R@10": 0.4592592592592592,
+      "TWIG_MRR": 0.24553413958175865,
+      "QA_R@1": 0.146031746031746,
+      "QA_R@5": 0.33756613756613757,
+      "QA_R@10": 0.435978835978836,
+      "QA_MRR": 0.2615268329554043,
+      "QA_nDCG@10": 0.2893132413400005
+    },
+    {
+      "train_dataset": "mimo_ch",
+      "test_dataset": "mimo_ch",
+      "eval_count": 100,
+      "total_queries": 100,
+      "best_edges": [
+        "has_column",
+        "comes_from",
+        "same_page",
+        "similar_content"
+      ],
+      "TWIG_R@1": 0.3411666666666666,
+      "TWIG_R@5": 0.5575,
+      "TWIG_R@10": 0.6433333333333334,
+      "TWIG_MRR": 0.5181190476190476,
+      "QA_R@1": 0.3995,
+      "QA_R@5": 0.6258333333333334,
+      "QA_R@10": 0.7216666666666667,
+      "QA_MRR": 0.5831349206349207,
+      "QA_nDCG@10": 0.5765322382081915
+    },
+    {
+      "train_dataset": "mimo_ch",
+      "test_dataset": "e2ewtq",
+      "eval_count": 61,
+      "total_queries": 61,
+      "best_edges": [
+        "has_column",
+        "comes_from",
+        "same_page",
+        "similar_content"
+      ],
+      "TWIG_R@1": 0.04918032786885246,
+      "TWIG_R@5": 0.13114754098360656,
+      "TWIG_R@10": 0.29508196721311475,
+      "TWIG_MRR": 0.09580405932864948,
+      "QA_R@1": 0.06557377049180328,
+      "QA_R@5": 0.14754098360655737,
+      "QA_R@10": 0.36065573770491804,
+      "QA_MRR": 0.11515742909185532,
+      "QA_nDCG@10": 0.17039148738291546
+    },
+    {
+      "train_dataset": "mimo_ch",
+      "test_dataset": "mmqa",
+      "eval_count": 248,
+      "total_queries": 248,
+      "best_edges": [
+        "has_column",
+        "comes_from",
+        "same_page",
+        "similar_content"
+      ],
+      "TWIG_R@1": 0.019825268817204297,
+      "TWIG_R@5": 0.06048387096774193,
+      "TWIG_R@10": 0.11485215053763441,
+      "TWIG_MRR": 0.08691276241679466,
+      "QA_R@1": 0.015591397849462365,
+      "QA_R@5": 0.06579301075268816,
+      "QA_R@10": 0.132997311827957,
+      "QA_MRR": 0.08558947772657446,
+      "QA_nDCG@10": 0.07945318164905969
+    },
+    {
+      "train_dataset": "e2ewtq",
+      "test_dataset": "feta",
+      "eval_count": 501,
+      "total_queries": 501,
+      "best_edges": [
+        "has_column",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.0718562874251497,
+      "TWIG_R@5": 0.2155688622754491,
+      "TWIG_R@10": 0.3013972055888224,
+      "TWIG_MRR": 0.13128108861641807,
+      "QA_R@1": 0.09181636726546906,
+      "QA_R@5": 0.2934131736526946,
+      "QA_R@10": 0.4231536926147705,
+      "QA_MRR": 0.1830196749358427,
+      "QA_nDCG@10": 0.23942441257243552
+    },
+    {
+      "train_dataset": "e2ewtq",
+      "test_dataset": "ottqa",
+      "eval_count": 554,
+      "total_queries": 554,
+      "best_edges": [
+        "has_column",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.13537906137184116,
+      "TWIG_R@5": 0.35018050541516244,
+      "TWIG_R@10": 0.4657039711191336,
+      "TWIG_MRR": 0.22461248639046477,
+      "QA_R@1": 0.16425992779783394,
+      "QA_R@5": 0.4043321299638989,
+      "QA_R@10": 0.5613718411552346,
+      "QA_MRR": 0.2670606268981718,
+      "QA_nDCG@10": 0.335830687981172
+    },
+    {
+      "train_dataset": "e2ewtq",
+      "test_dataset": "mimo_en",
+      "eval_count": 63,
+      "total_queries": 65,
+      "best_edges": [
+        "has_column",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.03703703703703704,
+      "TWIG_R@5": 0.18121693121693122,
+      "TWIG_R@10": 0.30423280423280424,
+      "TWIG_MRR": 0.11729654824892918,
+      "QA_R@1": 0.05952380952380952,
+      "QA_R@5": 0.22592592592592595,
+      "QA_R@10": 0.3216931216931217,
+      "QA_MRR": 0.14860796170319981,
+      "QA_nDCG@10": 0.1818139986849659
+    },
+    {
+      "train_dataset": "e2ewtq",
+      "test_dataset": "mimo_ch",
+      "eval_count": 100,
+      "total_queries": 100,
+      "best_edges": [
+        "has_column",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.032,
+      "TWIG_R@5": 0.08449999999999999,
+      "TWIG_R@10": 0.1698333333333333,
+      "TWIG_MRR": 0.07726190476190477,
+      "QA_R@1": 0.015333333333333332,
+      "QA_R@5": 0.12342857142857142,
+      "QA_R@10": 0.19409523809523813,
+      "QA_MRR": 0.0835952380952381,
+      "QA_nDCG@10": 0.10250267549488883
+    },
+    {
+      "train_dataset": "e2ewtq",
+      "test_dataset": "e2ewtq",
+      "eval_count": 61,
+      "total_queries": 61,
+      "best_edges": [
+        "has_column",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.4426229508196721,
+      "TWIG_R@5": 0.7540983606557377,
+      "TWIG_R@10": 0.8360655737704918,
+      "TWIG_MRR": 0.5565768930523028,
+      "QA_R@1": 0.45901639344262296,
+      "QA_R@5": 0.819672131147541,
+      "QA_R@10": 0.9344262295081968,
+      "QA_MRR": 0.6059328649492582,
+      "QA_nDCG@10": 0.6845825313297417
+    },
+    {
+      "train_dataset": "e2ewtq",
+      "test_dataset": "mmqa",
+      "eval_count": 248,
+      "total_queries": 248,
+      "best_edges": [
+        "has_column",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.08971774193548386,
+      "TWIG_R@5": 0.2639112903225807,
+      "TWIG_R@10": 0.3745967741935484,
+      "TWIG_MRR": 0.31474174347158235,
+      "QA_R@1": 0.10383064516129031,
+      "QA_R@5": 0.3276209677419355,
+      "QA_R@10": 0.43508064516129036,
+      "QA_MRR": 0.36224558371735804,
+      "QA_nDCG@10": 0.31824717144537656
+    },
+    {
+      "train_dataset": "mmqa",
+      "test_dataset": "feta",
+      "eval_count": 501,
+      "total_queries": 501,
+      "best_edges": [
+        "has_column",
+        "comes_from",
+        "similar_content",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.06986027944111776,
+      "TWIG_R@5": 0.18363273453093812,
+      "TWIG_R@10": 0.2874251497005988,
+      "TWIG_MRR": 0.1226309286189527,
+      "QA_R@1": 0.1157684630738523,
+      "QA_R@5": 0.281437125748503,
+      "QA_R@10": 0.3852295409181637,
+      "QA_MRR": 0.18929601115229863,
+      "QA_nDCG@10": 0.23517852155908925
+    },
+    {
+      "train_dataset": "mmqa",
+      "test_dataset": "ottqa",
+      "eval_count": 554,
+      "total_queries": 554,
+      "best_edges": [
+        "has_column",
+        "comes_from",
+        "similar_content",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.08483754512635379,
+      "TWIG_R@5": 0.24729241877256317,
+      "TWIG_R@10": 0.36462093862815886,
+      "TWIG_MRR": 0.15596455790499122,
+      "QA_R@1": 0.16425992779783394,
+      "QA_R@5": 0.388086642599278,
+      "QA_R@10": 0.516245487364621,
+      "QA_MRR": 0.2590317173800926,
+      "QA_nDCG@10": 0.31941731638740095
+    },
+    {
+      "train_dataset": "mmqa",
+      "test_dataset": "mimo_en",
+      "eval_count": 63,
+      "total_queries": 65,
+      "best_edges": [
+        "has_column",
+        "comes_from",
+        "similar_content",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.03968253968253968,
+      "TWIG_R@5": 0.20925925925925926,
+      "TWIG_R@10": 0.2732804232804233,
+      "TWIG_MRR": 0.1171264802217183,
+      "QA_R@1": 0.0992063492063492,
+      "QA_R@5": 0.2306878306878307,
+      "QA_R@10": 0.37407407407407406,
+      "QA_MRR": 0.1975245653817082,
+      "QA_nDCG@10": 0.2255509719129315
+    },
+    {
+      "train_dataset": "mmqa",
+      "test_dataset": "mimo_ch",
+      "eval_count": 100,
+      "total_queries": 100,
+      "best_edges": [
+        "has_column",
+        "comes_from",
+        "similar_content",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.018333333333333333,
+      "TWIG_R@5": 0.11449999999999999,
+      "TWIG_R@10": 0.20483333333333334,
+      "TWIG_MRR": 0.08933333333333333,
+      "QA_R@1": 0.05616666666666666,
+      "QA_R@5": 0.1908571428571428,
+      "QA_R@10": 0.3071190476190476,
+      "QA_MRR": 0.16857936507936508,
+      "QA_nDCG@10": 0.1826868187013686
+    },
+    {
+      "train_dataset": "mmqa",
+      "test_dataset": "e2ewtq",
+      "eval_count": 61,
+      "total_queries": 61,
+      "best_edges": [
+        "has_column",
+        "comes_from",
+        "similar_content",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.09836065573770492,
+      "TWIG_R@5": 0.4098360655737705,
+      "TWIG_R@10": 0.5245901639344263,
+      "TWIG_MRR": 0.22488290398126465,
+      "QA_R@1": 0.16393442622950818,
+      "QA_R@5": 0.5081967213114754,
+      "QA_R@10": 0.6721311475409836,
+      "QA_MRR": 0.3095303148581837,
+      "QA_nDCG@10": 0.39544102863885633
+    },
+    {
+      "train_dataset": "mmqa",
+      "test_dataset": "mmqa",
+      "eval_count": 248,
+      "total_queries": 248,
+      "best_edges": [
+        "has_column",
+        "comes_from",
+        "similar_content",
+        "shared_column_name"
+      ],
+      "TWIG_R@1": 0.38366935483870956,
+      "TWIG_R@5": 0.6450940860215053,
+      "TWIG_R@10": 0.7290994623655914,
+      "TWIG_MRR": 0.90568356374808,
+      "QA_R@1": 0.40315860215053756,
+      "QA_R@5": 0.6699596774193551,
+      "QA_R@10": 0.7835349462365592,
+      "QA_MRR": 0.9300403225806452,
+      "QA_nDCG@10": 0.7395939132543966
+    }
+  ]
+}

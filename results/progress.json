@@ -1,9 +1,11 @@
 {
-    "test/feta": {
-        "query_origin.jsonl": 2003,
-        "query_5lines.jsonl": 2003
+    "train/datagov": {
+        "query_ollama.jsonl": 3790
     },
-    "train/spider_multitabqa": {
-        "query_ollama.jsonl": 652
+    "test/datagov": {
+        "query_ollama.jsonl": 475
+    },
+    "dev/datagov": {
+        "query_ollama.jsonl": 473
     }
 }

@@ -1,0 +1,24 @@
+{
+  "source": "ottqa",
+  "dataset": "ottqa",
+  "base_edges": [
+    "has_column",
+    "similar_content"
+  ],
+  "edge_mode": "E1",
+  "subgraph_k": 5,
+  "results": {
+    "eval_count": 554,
+    "total": 554,
+    "edge_mode": "E1",
+    "subgraph_k": 5,
+    "Recall@1": 0.30324909747292417,
+    "Recall@5": 0.6750902527075813,
+    "Recall@10": 0.6750902527075813,
+    "MRR@k": 0.4484657039711194,
+    "nDCG@5": 0.5054540241485528,
+    "nDCG@10": 0.5054540241485528,
+    "Precision@5": 0.1350180505415172,
+    "Full Recall@5": 0.6750902527075813
+  }
+}

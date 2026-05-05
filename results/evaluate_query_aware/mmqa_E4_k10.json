@@ -1,0 +1,20 @@
+{
+  "source": "mmqa",
+  "dataset": "mmqa",
+  "edge_mode": "E4",
+  "subgraph_k": 10,
+  "results": {
+    "eval_count": 248,
+    "total": 248,
+    "edge_mode": "E4",
+    "subgraph_k": 10,
+    "Recall@1": 0.35544354838709674,
+    "Recall@5": 0.5331989247311826,
+    "Recall@10": 0.6497983870967742,
+    "MRR@k": 0.8617863543266767,
+    "nDCG@5": 0.5765813898551805,
+    "nDCG@10": 0.6239661664374213,
+    "Precision@5": 0.2411290322580651,
+    "Full Recall@5": 0.13306451612903225
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "source": "mimo_ch",
+  "dataset": "mimo_ch",
+  "base_edges": [
+    "similar_content"
+  ],
+  "edge_mode": "E1",
+  "subgraph_k": 5,
+  "results": {
+    "eval_count": 100,
+    "total": 100,
+    "edge_mode": "E1",
+    "subgraph_k": 5,
+    "Recall@1": 0.075,
+    "Recall@5": 0.46950000000000003,
+    "Recall@10": 0.46950000000000003,
+    "MRR@k": 0.23116666666666652,
+    "nDCG@5": 0.2688291552526533,
+    "nDCG@10": 0.2685985012670973,
+    "Precision@5": 0.11599999999999991,
+    "Full Recall@5": 0.41
+  }
+}

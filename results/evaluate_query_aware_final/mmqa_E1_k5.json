@@ -1,0 +1,27 @@
+{
+  "source": "mmqa",
+  "dataset": "mmqa",
+  "base_edges": [
+    "similar_table",
+    "has_column",
+    "comes_from",
+    "same_page",
+    "similar_content"
+  ],
+  "edge_mode": "E1",
+  "subgraph_k": 5,
+  "results": {
+    "eval_count": 248,
+    "total": 248,
+    "edge_mode": "E1",
+    "subgraph_k": 5,
+    "Recall@1": 0.34536290322580643,
+    "Recall@5": 0.5711693548387093,
+    "Recall@10": 0.5711693548387093,
+    "MRR@k": 0.8537634408602149,
+    "nDCG@5": 0.5914017652621584,
+    "nDCG@10": 0.5914017652621584,
+    "Precision@5": 0.258870967741936,
+    "Full Recall@5": 0.1693548387096774
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "source": "feta",
+  "dataset": "feta",
+  "base_edges": [
+    "has_column",
+    "same_page"
+  ],
+  "edge_mode": "E3",
+  "subgraph_k": 5,
+  "results": {
+    "eval_count": 501,
+    "total": 501,
+    "edge_mode": "E3",
+    "subgraph_k": 5,
+    "Recall@1": 0.1596806387225549,
+    "Recall@5": 0.45708582834331335,
+    "Recall@10": 0.45708582834331335,
+    "MRR@k": 0.2635063206919494,
+    "nDCG@5": 0.31139733462525765,
+    "nDCG@10": 0.31139733462525765,
+    "Precision@5": 0.0914171656686629,
+    "Full Recall@5": 0.45708582834331335
+  }
+}

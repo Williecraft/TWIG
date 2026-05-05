@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s \"https://data.gov.tw/api/front/dataset/search?limit=3&offset=0\")",
+      "Bash(source .venv/bin/activate)",
+      "Bash(python -u scripts/crawl_datagov.py)",
+      "Bash(cat /user_data/TabGNN/results/cross_dataset_eval/*.csv)",
+      "Bash(sort -t',' -k7 -rn /user_data/TabGNN/results/qa_edge_ablation/ottqa/results.csv)",
+      "Bash(sort -t',' -k9 -rn /user_data/TabGNN/results/qa_edge_ablation/ottqa/results.csv)"
+    ]
+  }
+}

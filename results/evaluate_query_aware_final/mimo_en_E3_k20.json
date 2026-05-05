@@ -1,0 +1,25 @@
+{
+  "source": "mimo_en",
+  "dataset": "mimo_en",
+  "base_edges": [
+    "has_column",
+    "similar_content",
+    "shared_column_name"
+  ],
+  "edge_mode": "E3",
+  "subgraph_k": 20,
+  "results": {
+    "eval_count": 63,
+    "total": 65,
+    "edge_mode": "E3",
+    "subgraph_k": 20,
+    "Recall@1": 0.23148148148148148,
+    "Recall@5": 0.42830687830687825,
+    "Recall@10": 0.6113756613756614,
+    "MRR@k": 0.38400730662635424,
+    "nDCG@5": 0.34957571697054624,
+    "nDCG@10": 0.4103566040772271,
+    "Precision@5": 0.1047619047619048,
+    "Full Recall@5": 0.36507936507936506
+  }
+}

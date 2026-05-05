@@ -1,0 +1,30 @@
+{
+  "source": "mmqa",
+  "dataset": "mmqa",
+  "best_edges": [
+    "similar_table",
+    "has_column",
+    "comes_from",
+    "same_page",
+    "similar_content"
+  ],
+  "results": {
+    "eval_count": 248,
+    "total": 248,
+    "coarse_k": 100,
+    "alpha": 0.3,
+    "edge_mode": "E4",
+    "Recall@1": 0.40315860215053756,
+    "Recall@5": 0.6061155913978494,
+    "Recall@10": 0.6934811827956989,
+    "MRR@k": 0.9295698924731184,
+    "nDCG@5": 0.6518612677862653,
+    "nDCG@10": 0.6877669632454376,
+    "Precision@5": 0.2750000000000006,
+    "Full Recall@5": 0.6061155913978494,
+    "E0_Recall@1": 0.38501344086021494,
+    "E0_Recall@5": 0.5799059139784943,
+    "E0_Recall@10": 0.6524865591397849,
+    "E0_MRR": 0.9059139784946237
+  }
+}

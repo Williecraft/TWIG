@@ -1,0 +1,20 @@
+{
+  "source": "feta",
+  "dataset": "feta",
+  "edge_mode": "E4",
+  "subgraph_k": 10,
+  "results": {
+    "eval_count": 501,
+    "total": 501,
+    "edge_mode": "E4",
+    "subgraph_k": 10,
+    "Recall@1": 0.3592814371257485,
+    "Recall@5": 0.5948103792415169,
+    "Recall@10": 0.6786427145708582,
+    "MRR@k": 0.4604212210499635,
+    "nDCG@5": 0.48533645975443707,
+    "nDCG@10": 0.5128145991277686,
+    "Precision@5": 0.11896207584830401,
+    "Full Recall@5": 0.5948103792415169
+  }
+}
