@@ -55,7 +55,7 @@ random.seed(SEED)
 torch.manual_seed(SEED)
 torch.cuda.manual_seed_all(SEED)
 
-PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
+PROJECT_DIR = Path(__file__).resolve().parent.parent.parent.parent
 MODEL_NAME = 'BAAI/bge-m3'
 
 DEFAULT_DATASETS = ["feta", "ottqa", "mimo_en", "mimo_ch", "e2ewtq", "mmqa"]
@@ -115,7 +115,7 @@ QA_LABEL_SMOOTH = 0.08
 # --- Phase 3: Evaluation hyperparameters ---
 EVAL_COARSE_K = 100
 EVAL_TOP_K = 10
-EVAL_ALPHA = 0.3
+EVAL_ALPHA = 0.0  # 不使用插值，直接用 QA rerank 分數
 
 
 # ══════════════════════════════════════════════════════════════
@@ -1111,7 +1111,7 @@ def evaluate_qa(twig_state_dict, qa_state_dict, edges, dataset, key_fields, devi
                 if 0 <= new_idx < coarse_in_sub.size(0):
                     coarse_in_sub[new_idx] = top_k_scores[orig_rank]
 
-            final_scores = EVAL_ALPHA * coarse_in_sub + (1 - EVAL_ALPHA) * rerank_scores
+            final_scores = rerank_scores  # 直接用 QA rerank 分數（不與粗排插值）
             _, reranked = torch.topk(final_scores, k=min(EVAL_TOP_K, final_scores.size(0)))
 
             new_to_old = {v: k for k, v in table_mapping.items()}

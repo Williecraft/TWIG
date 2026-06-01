@@ -46,7 +46,7 @@ from train_query_aware_v2 import (
 MODEL_NAME = 'BAAI/bge-m3'
 COARSE_K = 100            # 粗排取多少候選（增大以提高 recall ceiling）
 TOP_K = 10                # 最終取 top-k 結果
-ALPHA = 0.3               # 分數插值: final = alpha * coarse + (1-alpha) * rerank
+ALPHA = 0.0               # 不使用插值，直接用 QA rerank 分數
 
 QUERY_FILE = "/user_data/TabGNN/data/table/test/{source}/query.jsonl"
 GRAPH_PATH = "/user_data/TabGNN/data/processed/test/{source}/graph.pt"
@@ -258,7 +258,7 @@ def evaluate(source, dataset, coarse_k=COARSE_K, edge_mode=QUERY_EDGE_MODE):
     # Query-Aware 重排序（使用分數插值）
     alpha = ALPHA
     print(f"  Query-Aware 重排序 (coarse_k={coarse_k}, alpha={alpha})...")
-    recall1 = recall5 = recall10 = 0.0
+    recall1 = recall2 = recall5 = recall10 = 0.0
     mrr = ndcg5 = ndcg10 = prec5 = full_recall5 = 0.0
 
     with torch.no_grad():
@@ -291,8 +291,8 @@ def evaluate(source, dataset, coarse_k=COARSE_K, edge_mode=QUERY_EDGE_MODE):
                 if new_idx >= 0 and new_idx < coarse_in_sub.size(0):
                     coarse_in_sub[new_idx] = top_k_scores[orig_rank]
 
-            # 插值：alpha * coarse + (1 - alpha) * rerank
-            final_scores = alpha * coarse_in_sub + (1 - alpha) * rerank_scores
+            # 直接使用 QA rerank 分數（不與粗排插值）
+            final_scores = rerank_scores
 
             _, reranked = torch.topk(final_scores, k=min(TOP_K, final_scores.size(0)))
 
@@ -302,6 +302,7 @@ def evaluate(source, dataset, coarse_k=COARSE_K, edge_mode=QUERY_EDGE_MODE):
 
             # 累積指標
             recall1 += full_recall_at_k(retrieved, gt, 1)
+            recall2 += full_recall_at_k(retrieved, gt, 2)
             recall5 += full_recall_at_k(retrieved, gt, 5)
             recall10 += full_recall_at_k(retrieved, gt, 10)
             mrr += reciprocal_rank(retrieved, gt)
@@ -318,6 +319,7 @@ def evaluate(source, dataset, coarse_k=COARSE_K, edge_mode=QUERY_EDGE_MODE):
         'alpha': alpha,
         'edge_mode': ckpt_edge_mode,
         'Recall@1': recall1 / eval_count,
+        'Recall@2': recall2 / eval_count,
         'Recall@5': recall5 / eval_count,
         'Recall@10': recall10 / eval_count,
         'MRR@k': mrr / eval_count,
