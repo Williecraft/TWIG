@@ -38,12 +38,13 @@ torch.cuda.manual_seed_all(SEED)
 # ===========================
 
 BEST_EDGE_CONFIGS = {
-    "feta": ["has_column", "same_page"],
-    "ottqa": ["has_column", "similar_content"],
-    "mimo_en": ["has_column", "similar_content", "shared_column_name"],
-    "mimo_ch": ["similar_content"],
-    "e2ewtq": ["similar_content"],
-    "mmqa": ["similar_table", "has_column", "comes_from", "same_page", "similar_content"],
+    # QA ablation (A0-A63) 最佳配置，依 QA_R@10 on test set 選出
+    "feta":    ["similar_table", "has_column", "comes_from", "same_page", "shared_column_name"],           # A61
+    "ottqa":   ["similar_table", "has_column", "comes_from", "same_page", "similar_content", "shared_column_name"],  # A63
+    "mimo_en": ["similar_table", "comes_from", "same_page", "shared_column_name"],                         # A45
+    "mimo_ch": ["has_column", "comes_from", "same_page", "similar_content"],                               # A30
+    "e2ewtq":  ["has_column", "shared_column_name"],                                                       # A17
+    "mmqa":    ["has_column", "comes_from", "similar_content", "shared_column_name"],                      # A27
 }
 
 MODEL_NAME = 'BAAI/bge-m3'

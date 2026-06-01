@@ -1,0 +1,18 @@
+{
+  "online": {
+    "dataset": "ottqa",
+    "hardware": "NVIDIA TITAN RTX",
+    "n_queries": 41468,
+    "n_tables": 8889,
+    "baseline_bge_m3": {
+      "total_s": 97.0571,
+      "per_query_ms": 2.341
+    },
+    "twig": {
+      "total_s": 99.4209,
+      "per_query_ms": 2.398
+    },
+    "gnn_overhead_s": 2.3637,
+    "gnn_overhead_pct": 2.4
+  }
+}

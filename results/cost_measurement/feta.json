@@ -1,0 +1,18 @@
+{
+  "online": {
+    "dataset": "feta",
+    "hardware": "NVIDIA TITAN RTX",
+    "n_queries": 7324,
+    "n_tables": 7326,
+    "baseline_bge_m3": {
+      "total_s": 14.4764,
+      "per_query_ms": 1.977
+    },
+    "twig": {
+      "total_s": 14.5832,
+      "per_query_ms": 1.991
+    },
+    "gnn_overhead_s": 0.1068,
+    "gnn_overhead_pct": 0.7
+  }
+}
