@@ -66,7 +66,7 @@ TEMP = 0.04
 LABEL_SMOOTH = 0.08
 
 # 路徑
-PRETRAINED_PATH = "/user_data/TabGNN/checkpoints/{dataset}/model.pt"
+PRETRAINED_PATH = "/user_data/TabGNN/checkpoints/{dataset}/model_best_edges.pt"
 GRAPH_FILE = "/user_data/TabGNN/data/processed/train/{dataset}/graph.pt"
 QUERY_FILE = "/user_data/TabGNN/data/table/train/{dataset}/query.jsonl"
 VAL_GRAPH_FILE = "/user_data/TabGNN/data/processed/dev/{dataset}/graph.pt"

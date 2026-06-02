@@ -1,0 +1,48 @@
+{
+  "hardware": {
+    "gpu": "NVIDIA TITAN RTX",
+    "vram_gb": 23.6,
+    "cpu": "Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz",
+    "ram_gb": 125.7
+  },
+  "online": {
+    "bge-m3": {
+      "method": "bge-m3",
+      "n_queries": 41468,
+      "n_tables": 8889,
+      "total_s": 101.9281,
+      "per_query_ms": 2.458,
+      "repeats": [
+        100.15960145401186,
+        101.92807721701683,
+        102.93333246398834
+      ]
+    },
+    "TWIG": {
+      "method": "TWIG",
+      "n_queries": 41468,
+      "n_tables": 8889,
+      "total_s": 103.1706,
+      "per_query_ms": 2.488,
+      "repeats": [
+        102.81440068897791,
+        103.26960572501412,
+        103.17062038302538
+      ]
+    },
+    "TWIG-QA": {
+      "method": "TWIG-QA",
+      "n_queries": 41468,
+      "n_tables": 8889,
+      "total_s": 1450.9314,
+      "per_query_ms": 34.989,
+      "rerank_per_query_ms": 34.989,
+      "sample_size": 300,
+      "repeats": [
+        1450.9314454486841,
+        1461.3411494282382,
+        1443.9680807654843
+      ]
+    }
+  }
+}

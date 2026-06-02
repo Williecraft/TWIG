@@ -1,0 +1,164 @@
+/user_data/TabGNN/.venv/lib/python3.10/site-packages/hyperopt/atpe.py:19: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+
+============================================================
+評估 SOURCE=feta  MODEL=feta
+KEY_FIELDS: ('sheet_name', 'file_name')
+============================================================
+使用的設備: cuda
+  過濾邊: ['has_column', 'same_page']
+根據 KEY_FIELDS=('sheet_name', 'file_name') 重建 table_id_to_idx...
+載入查詢 501 條，其中可對齊到圖的樣本 501 條。
+嵌入所有查詢向量...
+Batches:   0%|          | 0/16 [00:00<?, ?it/s]Batches:   6%|▋         | 1/16 [00:00<00:02,  5.21it/s]Batches:  25%|██▌       | 4/16 [00:00<00:00, 13.23it/s]Batches:  38%|███▊      | 6/16 [00:00<00:00, 14.99it/s]Batches:  50%|█████     | 8/16 [00:00<00:00, 16.40it/s]Batches:  62%|██████▎   | 10/16 [00:00<00:00, 17.40it/s]Batches:  81%|████████▏ | 13/16 [00:00<00:00, 19.88it/s]Batches: 100%|██████████| 16/16 [00:00<00:00, 22.35it/s]Batches: 100%|██████████| 16/16 [00:00<00:00, 18.12it/s]
+計算 GNN 表格嵌入...
+計算相似度並評估...
+評估中:   0%|          | 0/2 [00:00<?, ?it/s]評估中:  50%|█████     | 1/2 [00:00<00:00,  9.95it/s]評估中: 100%|██████████| 2/2 [00:00<00:00, 10.62it/s]
+
+===== 評估結果 =====
+Recall@1：0.8822
+Recall@5：0.9621
+Recall@10：0.9820
+Recall@50：0.9980
+MRR@k：0.9176
+nDCG@5：0.9262
+nDCG@10：0.9327
+Precision@5：0.1924
+Full Recall@5：0.9621
+====================
+結果已儲存至 /user_data/TabGNN/results/evaluate/feta.json
+
+============================================================
+評估 SOURCE=ottqa  MODEL=ottqa
+KEY_FIELDS: ('sheet_name', 'file_name')
+============================================================
+使用的設備: cuda
+  過濾邊: ['has_column', 'similar_content']
+根據 KEY_FIELDS=('sheet_name', 'file_name') 重建 table_id_to_idx...
+載入查詢 554 條，其中可對齊到圖的樣本 554 條。
+嵌入所有查詢向量...
+Batches:   0%|          | 0/18 [00:00<?, ?it/s]Batches:  17%|█▋        | 3/18 [00:00<00:00, 16.92it/s]Batches:  28%|██▊       | 5/18 [00:00<00:00, 13.93it/s]Batches:  39%|███▉      | 7/18 [00:00<00:00, 14.05it/s]Batches:  50%|█████     | 9/18 [00:00<00:00, 14.72it/s]Batches:  61%|██████    | 11/18 [00:00<00:00, 15.24it/s]Batches:  72%|███████▏  | 13/18 [00:00<00:00, 15.63it/s]Batches:  83%|████████▎ | 15/18 [00:00<00:00, 15.89it/s]Batches:  94%|█████████▍| 17/18 [00:01<00:00, 16.56it/s]Batches: 100%|██████████| 18/18 [00:01<00:00, 15.74it/s]
+計算 GNN 表格嵌入...
+計算相似度並評估...
+評估中:   0%|          | 0/3 [00:00<?, ?it/s]評估中:  67%|██████▋   | 2/3 [00:00<00:00, 10.71it/s]評估中: 100%|██████████| 3/3 [00:00<00:00, 14.85it/s]
+
+===== 評估結果 =====
+Recall@1：0.8303
+Recall@5：0.9675
+Recall@10：0.9838
+Recall@50：0.9982
+MRR@k：0.8913
+nDCG@5：0.9080
+nDCG@10：0.9137
+Precision@5：0.1935
+Full Recall@5：0.9675
+====================
+結果已儲存至 /user_data/TabGNN/results/evaluate/ottqa.json
+
+============================================================
+評估 SOURCE=mimo_en  MODEL=mimo_en
+KEY_FIELDS: ('id',)
+============================================================
+使用的設備: cuda
+  過濾邊: ['has_column', 'similar_content', 'shared_column_name']
+根據 KEY_FIELDS=('id',) 重建 table_id_to_idx...
+載入查詢 65 條，其中可對齊到圖的樣本 63 條。
+嵌入所有查詢向量...
+Batches:   0%|          | 0/3 [00:00<?, ?it/s]Batches:  67%|██████▋   | 2/3 [00:00<00:00, 13.23it/s]Batches: 100%|██████████| 3/3 [00:00<00:00, 14.98it/s]
+計算 GNN 表格嵌入...
+計算相似度並評估...
+評估中:   0%|          | 0/1 [00:00<?, ?it/s]評估中: 100%|██████████| 1/1 [00:00<00:00, 42.58it/s]
+
+===== 評估結果 =====
+Recall@1：0.3286
+Recall@5：0.6220
+Recall@10：0.6749
+Recall@50：0.9114
+MRR@k：0.5005
+nDCG@5：0.4997
+nDCG@10：0.5213
+Precision@5：0.1524
+Full Recall@5：0.5556
+====================
+結果已儲存至 /user_data/TabGNN/results/evaluate/mimo_en.json
+
+============================================================
+評估 SOURCE=mimo_ch  MODEL=mimo_ch
+KEY_FIELDS: ('id',)
+============================================================
+使用的設備: cuda
+  過濾邊: ['similar_content']
+根據 KEY_FIELDS=('id',) 重建 table_id_to_idx...
+載入查詢 100 條，其中可對齊到圖的樣本 100 條。
+嵌入所有查詢向量...
+Batches:   0%|          | 0/4 [00:00<?, ?it/s]Batches:  75%|███████▌  | 3/4 [00:00<00:00, 21.24it/s]Batches: 100%|██████████| 4/4 [00:00<00:00, 21.57it/s]
+計算 GNN 表格嵌入...
+計算相似度並評估...
+評估中:   0%|          | 0/1 [00:00<?, ?it/s]評估中: 100%|██████████| 1/1 [00:00<00:00, 27.17it/s]
+
+===== 評估結果 =====
+Recall@1：0.3578
+Recall@5：0.6135
+Recall@10：0.6792
+Recall@50：0.8377
+MRR@k：0.5560
+nDCG@5：0.5099
+nDCG@10：0.5329
+Precision@5：0.1500
+Full Recall@5：0.5400
+====================
+結果已儲存至 /user_data/TabGNN/results/evaluate/mimo_ch.json
+
+============================================================
+評估 SOURCE=e2ewtq  MODEL=e2ewtq
+KEY_FIELDS: ('sheet_name', 'file_name')
+============================================================
+使用的設備: cuda
+  過濾邊: ['similar_content']
+根據 KEY_FIELDS=('sheet_name', 'file_name') 重建 table_id_to_idx...
+載入查詢 61 條，其中可對齊到圖的樣本 61 條。
+嵌入所有查詢向量...
+Batches:   0%|          | 0/2 [00:00<?, ?it/s]Batches: 100%|██████████| 2/2 [00:00<00:00, 24.19it/s]
+計算 GNN 表格嵌入...
+計算相似度並評估...
+評估中:   0%|          | 0/1 [00:00<?, ?it/s]評估中: 100%|██████████| 1/1 [00:00<00:00, 44.01it/s]
+
+===== 評估結果 =====
+Recall@1：0.4590
+Recall@5：0.8197
+Recall@10：0.8852
+Recall@50：1.0000
+MRR@k：0.6046
+nDCG@5：0.6487
+nDCG@10：0.6688
+Precision@5：0.1639
+Full Recall@5：0.8197
+====================
+結果已儲存至 /user_data/TabGNN/results/evaluate/e2ewtq.json
+
+============================================================
+評估 SOURCE=mmqa  MODEL=mmqa
+KEY_FIELDS: ('id',)
+============================================================
+使用的設備: cuda
+  過濾邊: ['similar_table', 'has_column', 'comes_from', 'same_page', 'similar_content']
+根據 KEY_FIELDS=('id',) 重建 table_id_to_idx...
+載入查詢 248 條，其中可對齊到圖的樣本 248 條。
+嵌入所有查詢向量...
+Batches:   0%|          | 0/8 [00:00<?, ?it/s]Batches:  25%|██▌       | 2/8 [00:00<00:00, 17.93it/s]Batches:  50%|█████     | 4/8 [00:00<00:00, 16.61it/s]Batches:  75%|███████▌  | 6/8 [00:00<00:00, 16.86it/s]Batches: 100%|██████████| 8/8 [00:00<00:00, 17.89it/s]Batches: 100%|██████████| 8/8 [00:00<00:00, 17.54it/s]
+計算 GNN 表格嵌入...
+計算相似度並評估...
+評估中:   0%|          | 0/1 [00:00<?, ?it/s]評估中: 100%|██████████| 1/1 [00:00<00:00,  9.19it/s]評估中: 100%|██████████| 1/1 [00:00<00:00,  9.18it/s]
+
+===== 評估結果 =====
+Recall@1：0.3890
+Recall@5：0.6545
+Recall@10：0.7583
+Recall@50：0.9206
+MRR@k：0.9153
+nDCG@5：0.6770
+nDCG@10：0.7197
+Precision@5：0.2984
+Full Recall@5：0.3065
+====================
+結果已儲存至 /user_data/TabGNN/results/evaluate/mmqa.json

@@ -1,0 +1,34 @@
+
+============================================================
+Hardware
+============================================================
+  GPU : NVIDIA TITAN RTX  (23.6 GB VRAM)
+  CPU : Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz
+  RAM : 125.7 GB
+
+============================================================
+Online Cost — ottqa (train split)
+Each method in a fresh subprocess  |  N_REPEATS=3  |  median reported
+============================================================
+  → subprocess: bgem3 ...
+    bge-m3      total=1.70min  per-query=2.46ms
+  → subprocess: twig ...
+    TWIG        total=1.72min  per-query=2.49ms
+  → subprocess: twig_qa ...
+    TWIG-QA     total=24.18min  per-query=34.99ms
+
+============================================================
+SUMMARY
+============================================================
+  GPU: NVIDIA TITAN RTX  (23.6GB VRAM)
+  CPU: Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz
+  RAM: 125.7GB
+
+  Online (41468 queries / 8889 tables, median of 3 runs)
+  Method            Total     Per-query
+  --------------------------------------
+  bge-m3          1.70min       2.46 ms
+  TWIG            1.72min       2.49 ms
+  TWIG-QA        24.18min      34.99 ms
+
+  Saved → /user_data/TabGNN/results/cost_measurement/ottqa_train.json

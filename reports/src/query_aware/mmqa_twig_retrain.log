@@ -1,0 +1,84 @@
+/user_data/TabGNN/.venv/lib/python3.10/site-packages/hyperopt/atpe.py:19: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+
+============================================================
+訓練 DATASET: mmqa
+KEY_FIELDS: ('id',)
+============================================================
+使用的設備: cuda
+總共 1 組參數組合。
+根據 KEY_FIELDS=('id',) 重建 id_to_idx...
+從 /user_data/TabGNN/data/table/train/mmqa/query.jsonl 載入 queries...
+正在建立鄰居索引...
+Building Graph Index:   0%|          | 0/3145 [00:00<?, ?it/s]Building Graph Index: 100%|██████████| 3145/3145 [00:00<00:00, 175015.40it/s]
+Total tables with neighbors: 629
+載入 queries: 0it [00:00, ?it/s]載入 queries: 1974it [00:00, 66077.86it/s]
+共 1974 個訓練樣本。開始嵌入查詢向量...
+Batches:   0%|          | 0/62 [00:00<?, ?it/s]Batches:   2%|▏         | 1/62 [00:00<00:13,  4.68it/s]Batches:   5%|▍         | 3/62 [00:00<00:07,  7.99it/s]Batches:   8%|▊         | 5/62 [00:00<00:05,  9.79it/s]Batches:  11%|█▏        | 7/62 [00:00<00:04, 11.17it/s]Batches:  15%|█▍        | 9/62 [00:00<00:04, 11.72it/s]Batches:  18%|█▊        | 11/62 [00:01<00:04, 12.32it/s]Batches:  21%|██        | 13/62 [00:01<00:03, 13.32it/s]Batches:  24%|██▍       | 15/62 [00:01<00:03, 14.06it/s]Batches:  27%|██▋       | 17/62 [00:01<00:03, 14.09it/s]Batches:  31%|███       | 19/62 [00:01<00:02, 14.61it/s]Batches:  34%|███▍      | 21/62 [00:01<00:02, 15.08it/s]Batches:  37%|███▋      | 23/62 [00:01<00:02, 15.26it/s]Batches:  40%|████      | 25/62 [00:01<00:02, 15.57it/s]Batches:  44%|████▎     | 27/62 [00:02<00:02, 15.77it/s]Batches:  47%|████▋     | 29/62 [00:02<00:02, 16.17it/s]Batches:  50%|█████     | 31/62 [00:02<00:01, 16.47it/s]Batches:  53%|█████▎    | 33/62 [00:02<00:01, 16.69it/s]Batches:  56%|█████▋    | 35/62 [00:02<00:01, 16.66it/s]Batches:  60%|█████▉    | 37/62 [00:02<00:01, 16.82it/s]Batches:  63%|██████▎   | 39/62 [00:02<00:01, 17.08it/s]Batches:  66%|██████▌   | 41/62 [00:02<00:01, 17.58it/s]Batches:  69%|██████▉   | 43/62 [00:02<00:01, 17.91it/s]Batches:  73%|███████▎  | 45/62 [00:03<00:00, 18.05it/s]Batches:  76%|███████▌  | 47/62 [00:03<00:00, 18.48it/s]Batches:  79%|███████▉  | 49/62 [00:03<00:00, 18.58it/s]Batches:  82%|████████▏ | 51/62 [00:03<00:00, 18.89it/s]Batches:  87%|████████▋ | 54/62 [00:03<00:00, 19.23it/s]Batches:  90%|█████████ | 56/62 [00:03<00:00, 19.18it/s]Batches:  95%|█████████▌| 59/62 [00:03<00:00, 19.53it/s]Batches: 100%|██████████| 62/62 [00:03<00:00, 21.57it/s]Batches: 100%|██████████| 62/62 [00:03<00:00, 16.01it/s]
+
+從 /user_data/TabGNN/data/processed/dev/mmqa/graph.pt 載入驗證集圖...
+根據 KEY_FIELDS=('id',) 重建 id_to_idx...
+從 /user_data/TabGNN/data/table/dev/mmqa/query.jsonl 載入 queries...
+正在建立鄰居索引...
+Building Graph Index:   0%|          | 0/1575 [00:00<?, ?it/s]Building Graph Index: 100%|██████████| 1575/1575 [00:00<00:00, 162742.14it/s]
+Total tables with neighbors: 315
+載入 queries: 0it [00:00, ?it/s]載入 queries: 246it [00:00, 93324.78it/s]
+驗證集包含 246 個樣本。
+共 246 個訓練樣本。開始嵌入查詢向量...
+Batches:   0%|          | 0/8 [00:00<?, ?it/s]Batches:  25%|██▌       | 2/8 [00:00<00:00, 12.54it/s]Batches:  50%|█████     | 4/8 [00:00<00:00, 14.37it/s]Batches:  75%|███████▌  | 6/8 [00:00<00:00, 15.95it/s]Batches: 100%|██████████| 8/8 [00:00<00:00, 16.70it/s]
+/user_data/TabGNN/reports/src/./train_model.py:312: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  scaler = GradScaler(enabled=(device.type == 'cuda'))
+
+[Hyperopt] Testing params: {'LEARNING_RATE': 0.0005543418807199451, 'HIDDEN_CHANNELS': 768, 'DROPOUT': 0.10028905529000982, 'WEIGHT_DECAY': 0.03217253330215496, 'SAGE_AGGR': 'min', 'HETERO_AGGR': 'max', 'CLIP_GRAD_NORM': 0.6, 'TEMP_START': 0.05, 'TEMP_END': 0.03, 'SMOOTH_START': 0.12, 'SMOOTH_END': 0.06}
+Epoch 1/30:   0%|          | 0/16 [00:00<?, ?it/s]/user_data/TabGNN/reports/src/./train_model.py:347: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(enabled=(device.type == 'cuda')):
+/user_data/TabGNN/.venv/lib/python3.10/site-packages/torch_geometric/utils/_scatter.py:91: UserWarning: The usage of `scatter(reduce='min')` can be accelerated via the 'torch-scatter' package, but it was not found
+  warnings.warn(
+Epoch 1/30:  12%|█▎        | 2/16 [00:00<00:00, 16.21it/s]Epoch 1/30:  56%|█████▋    | 9/16 [00:00<00:00, 43.74it/s]Epoch 1/30: 100%|██████████| 16/16 [00:00<00:00, 46.04it/s]Epoch 1/30: 100%|██████████| 16/16 [00:00<00:00, 42.68it/s]
+  Epoch 1/30 | Loss: 5.9541 | Val Recall@10: 0.8415 | Val MRR: 0.6203
+    [新最佳驗證結果] Epoch 1 | Val Recall@10: 0.8415
+Epoch 2/30:   0%|          | 0/16 [00:00<?, ?it/s]Epoch 2/30:  44%|████▍     | 7/16 [00:00<00:00, 65.40it/s]Epoch 2/30:  88%|████████▊ | 14/16 [00:00<00:00, 65.32it/s]Epoch 2/30: 100%|██████████| 16/16 [00:00<00:00, 65.35it/s]
+  Epoch 2/30 | Loss: 3.5046 | Val Recall@10: 0.9715 | Val MRR: 0.8608
+    [新最佳驗證結果] Epoch 2 | Val Recall@10: 0.9715
+Epoch 3/30:   0%|          | 0/16 [00:00<?, ?it/s]Epoch 3/30:  44%|████▍     | 7/16 [00:00<00:00, 64.88it/s]Epoch 3/30:  88%|████████▊ | 14/16 [00:00<00:00, 65.73it/s]Epoch 3/30: 100%|██████████| 16/16 [00:00<00:00, 65.60it/s]
+  Epoch 3/30 | Loss: 2.4843 | Val Recall@10: 0.9797 | Val MRR: 0.8700
+    [新最佳驗證結果] Epoch 3 | Val Recall@10: 0.9797
+Epoch 4/30:   0%|          | 0/16 [00:00<?, ?it/s]Epoch 4/30:  44%|████▍     | 7/16 [00:00<00:00, 66.04it/s]Epoch 4/30:  88%|████████▊ | 14/16 [00:00<00:00, 66.01it/s]Epoch 4/30: 100%|██████████| 16/16 [00:00<00:00, 66.02it/s]
+  Epoch 4/30 | Loss: 2.0121 | Val Recall@10: 0.9797 | Val MRR: 0.8900
+    [未提升] 耐心計數: 1/10
+Epoch 5/30:   0%|          | 0/16 [00:00<?, ?it/s]Epoch 5/30:  44%|████▍     | 7/16 [00:00<00:00, 65.45it/s]Epoch 5/30:  88%|████████▊ | 14/16 [00:00<00:00, 66.01it/s]Epoch 5/30: 100%|██████████| 16/16 [00:00<00:00, 65.99it/s]
+  Epoch 5/30 | Loss: 1.7399 | Val Recall@10: 0.9715 | Val MRR: 0.8861
+    [未提升] 耐心計數: 2/10
+Epoch 6/30:   0%|          | 0/16 [00:00<?, ?it/s]Epoch 6/30:  44%|████▍     | 7/16 [00:00<00:00, 65.77it/s]Epoch 6/30:  88%|████████▊ | 14/16 [00:00<00:00, 66.29it/s]Epoch 6/30: 100%|██████████| 16/16 [00:00<00:00, 66.20it/s]
+  Epoch 6/30 | Loss: 1.5932 | Val Recall@10: 0.9634 | Val MRR: 0.8962
+    [未提升] 耐心計數: 3/10
+Epoch 7/30:   0%|          | 0/16 [00:00<?, ?it/s]Epoch 7/30:  44%|████▍     | 7/16 [00:00<00:00, 65.01it/s]Epoch 7/30:  88%|████████▊ | 14/16 [00:00<00:00, 65.74it/s]Epoch 7/30: 100%|██████████| 16/16 [00:00<00:00, 65.68it/s]
+  Epoch 7/30 | Loss: 1.4675 | Val Recall@10: 0.9756 | Val MRR: 0.9117
+    [未提升] 耐心計數: 4/10
+Epoch 8/30:   0%|          | 0/16 [00:00<?, ?it/s]Epoch 8/30:  44%|████▍     | 7/16 [00:00<00:00, 65.27it/s]Epoch 8/30:  88%|████████▊ | 14/16 [00:00<00:00, 65.54it/s]Epoch 8/30: 100%|██████████| 16/16 [00:00<00:00, 65.55it/s]
+  Epoch 8/30 | Loss: 1.3774 | Val Recall@10: 0.9797 | Val MRR: 0.9046
+    [未提升] 耐心計數: 5/10
+Epoch 9/30:   0%|          | 0/16 [00:00<?, ?it/s]Epoch 9/30:  44%|████▍     | 7/16 [00:00<00:00, 64.36it/s]Epoch 9/30:  88%|████████▊ | 14/16 [00:00<00:00, 65.19it/s]Epoch 9/30: 100%|██████████| 16/16 [00:00<00:00, 65.22it/s]
+  Epoch 9/30 | Loss: 1.3192 | Val Recall@10: 0.9756 | Val MRR: 0.9078
+    [未提升] 耐心計數: 6/10
+Epoch 10/30:   0%|          | 0/16 [00:00<?, ?it/s]Epoch 10/30:  44%|████▍     | 7/16 [00:00<00:00, 66.17it/s]Epoch 10/30:  88%|████████▊ | 14/16 [00:00<00:00, 66.70it/s]Epoch 10/30: 100%|██████████| 16/16 [00:00<00:00, 66.65it/s]
+  Epoch 10/30 | Loss: 1.2458 | Val Recall@10: 0.9715 | Val MRR: 0.8991
+    [未提升] 耐心計數: 7/10
+Epoch 11/30:   0%|          | 0/16 [00:00<?, ?it/s]Epoch 11/30:  44%|████▍     | 7/16 [00:00<00:00, 65.79it/s]Epoch 11/30:  88%|████████▊ | 14/16 [00:00<00:00, 66.57it/s]Epoch 11/30: 100%|██████████| 16/16 [00:00<00:00, 66.41it/s]
+  Epoch 11/30 | Loss: 1.1998 | Val Recall@10: 0.9756 | Val MRR: 0.8945
+    [未提升] 耐心計數: 8/10
+Epoch 12/30:   0%|          | 0/16 [00:00<?, ?it/s]Epoch 12/30:  44%|████▍     | 7/16 [00:00<00:00, 65.56it/s]Epoch 12/30:  88%|████████▊ | 14/16 [00:00<00:00, 66.27it/s]Epoch 12/30: 100%|██████████| 16/16 [00:00<00:00, 66.18it/s]
+  Epoch 12/30 | Loss: 1.1565 | Val Recall@10: 0.9756 | Val MRR: 0.8968
+    [未提升] 耐心計數: 9/10
+Epoch 13/30:   0%|          | 0/16 [00:00<?, ?it/s]Epoch 13/30:  44%|████▍     | 7/16 [00:00<00:00, 66.34it/s]Epoch 13/30:  88%|████████▊ | 14/16 [00:00<00:00, 66.20it/s]Epoch 13/30: 100%|██████████| 16/16 [00:00<00:00, 66.05it/s]
+  Epoch 13/30 | Loss: 1.1148 | Val Recall@10: 0.9715 | Val MRR: 0.8965
+    [未提升] 耐心計數: 10/10
+
+  [Early Stopping] 驗證集性能連續 10 個 epoch 未提升，停止訓練。
+  最佳 Epoch: 3 | 最佳 Val Recall@10: 0.9797
+
+已載入驗證集上最佳的模型（Epoch 3）
+  訓練集結果 -> Recall@10: 0.9995 | MRR: 0.9753
+  驗證集結果 -> Recall@10: 0.9797 | MRR: 0.8700
+  [更新最佳結果] Best Recall@10: 0.9797 (Epoch 3)
+模型已儲存至 /user_data/TabGNN/checkpoints/mmqa/model.pt

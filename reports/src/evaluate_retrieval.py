@@ -12,11 +12,11 @@ from pathlib import Path
 # ========= 可調參數 =========
 EVAL_PAIRS = [
     # (source, dataset)  source=評估資料集, dataset=模型來源
-    # ("mimo_en", "mimo_en"),
-    # ("mimo_ch", "mimo_ch"),
-    # ("ottqa", "ottqa"),
-    # ("feta", "feta"),
-    # ("e2ewtq", "e2ewtq"),
+    ("feta", "feta"),
+    ("ottqa", "ottqa"),
+    ("mimo_en", "mimo_en"),
+    ("mimo_ch", "mimo_ch"),
+    ("e2ewtq", "e2ewtq"),
     ("mmqa", "mmqa"),
 ]
 
@@ -32,10 +32,10 @@ def get_key_fields(dataset_name: str) -> tuple:
 
 
 QUERY_FILE = "/user_data/TabGNN/data/table/test/{source}/query.jsonl"
-MODEL_PATH = "/user_data/TabGNN/checkpoints/{dataset}/model.pt"
+MODEL_PATH = "/user_data/TabGNN/checkpoints/{dataset}/model_best_edges.pt"
 GRAPH_PATH = "/user_data/TabGNN/data/processed/test/{source}/graph.pt"
 RESULT_DIR = "/user_data/TabGNN/results/evaluate"
-TOP_K = 10
+TOP_K = 50
 
 # ===========================
 
@@ -43,16 +43,64 @@ def make_key(item: dict, key_fields: tuple) -> str:
     """根據 key_fields 組合產生唯一鍵"""
     return "|".join(str(item.get(f, "")) for f in key_fields)
 
+def filter_graph_edges(data, keep_relations: list):
+    """過濾圖中的邊，只保留訓練時使用的邊類型"""
+    from torch_geometric.data import HeteroData
+    filtered = HeteroData()
+    for node_type in data.node_types:
+        for attr_name in data[node_type].keys():
+            filtered[node_type][attr_name] = data[node_type][attr_name]
+
+    forward_to_reverse = {
+        'has_column': 'rev_has_column',
+        'comes_from': 'rev_comes_from',
+        'similar_table': 'similar_table',
+        'same_page': 'same_page',
+        'similar_content': 'similar_content',
+        'shared_column_name': 'shared_column_name',
+    }
+    edges_to_keep = set()
+    for rel in keep_relations:
+        edges_to_keep.add(rel)
+        if rel in forward_to_reverse:
+            edges_to_keep.add(forward_to_reverse[rel])
+
+    reverse_to_forward = {'rev_has_column': 'has_column', 'rev_comes_from': 'comes_from'}
+    for edge_type, edge_index in data.edge_index_dict.items():
+        _, relation, _ = edge_type
+        fwd = reverse_to_forward.get(relation, relation)
+        if relation in edges_to_keep or fwd in keep_relations:
+            filtered[edge_type].edge_index = edge_index
+
+    # 確保每個 node type 都有邊可以接收訊息，否則 to_hetero 會報錯
+    dest_types = {dst for _, _, dst in filtered.edge_types} if filtered.edge_types else set()
+    for node_type in filtered.node_types:
+        if node_type not in dest_types:
+            filtered[node_type, f'_self_loop_{node_type}', node_type].edge_index = \
+                torch.tensor([[0], [0]], dtype=torch.long)
+
+    if hasattr(data, 'metadata_maps'):
+        filtered.metadata_maps = data.metadata_maps
+    return filtered
+
+
 def load_graph_and_model(graph_path: str, model_path: str):
     """載入圖結構和模型"""
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"使用的設備: {device}")
 
+    # 先載入 checkpoint 以取得 best_edges
+    checkpoint = torch.load(model_path, map_location=device, weights_only=False)
+    best_edges = checkpoint.get('best_edges', None)
+
     data = torch.load(graph_path, map_location=device, weights_only=False)
 
+    # 若 checkpoint 有 best_edges，過濾 test graph 以匹配訓練時的邊配置
+    if best_edges:
+        print(f"  過濾邊: {best_edges}")
+        data = filter_graph_edges(data, best_edges)
+
     # 取得映射表
-    # 取得映射表
-    # 如果 data 有 table_meta，我們根據當前的 KEY_FIELDS 重建 table_id_to_idx
     if hasattr(data, 'metadata_maps') and 'table_meta' in data.metadata_maps:
         print(f"根據 KEY_FIELDS={KEY_FIELDS} 重建 table_id_to_idx...")
         table_meta = data.metadata_maps['table_meta']
@@ -62,7 +110,6 @@ def load_graph_and_model(graph_path: str, model_path: str):
             if key not in table_id_to_idx:
                 table_id_to_idx[key] = idx
     else:
-        # Fallback 舊邏輯
         try:
             table_id_to_idx = data.metadata_maps['table_id_to_idx']
         except Exception:
@@ -73,9 +120,6 @@ def load_graph_and_model(graph_path: str, model_path: str):
                 table_id_to_idx = {idx: idx for idx in range(data['table'].x.size(0))}
 
     embed_dim = data['table'].x.size(1)
-
-    # 載入模型和超參數
-    checkpoint = torch.load(model_path, map_location=device)
     hps = checkpoint.get('hps', {'HIDDEN_CHANNELS': 128, 'DROPOUT': 0.2, 'AGGR': 'sum'})
 
     model = DiffusionModel(
@@ -86,7 +130,6 @@ def load_graph_and_model(graph_path: str, model_path: str):
         sage_aggr=hps.get('SAGE_AGGR', 'sum'),
         hetero_aggr=hps.get('HETERO_AGGR', 'sum'),
     ).to(device)
-    # 使用 strict=False 允許跨數據集評估（圖結構可能不同）
     model.load_state_dict(checkpoint['model_state_dict'], strict=False)
     model.eval()
 
@@ -211,7 +254,7 @@ def evaluate(
     eval_count = sum(1 for gt in relevants if len(gt) > 0)
 
     # 初始化指標
-    recall1 = recall5 = recall10 = 0.0  # Standard Recall
+    recall1 = recall5 = recall10 = recall50 = 0.0  # Standard Recall
     exact_match5 = 0.0                  # Real Full Recall (全對才算)
 
     mrr = 0.0
@@ -255,6 +298,7 @@ def evaluate(
                 recall1 += full_recall_at_k(retrieved_ids, relevant_ids, 1)
                 recall5 += full_recall_at_k(retrieved_ids, relevant_ids, 5)
                 recall10 += full_recall_at_k(retrieved_ids, relevant_ids, 10)
+                recall50 += full_recall_at_k(retrieved_ids, relevant_ids, 50)
 
                 # 2. Exact Match (真正的 Full Recall) - 必須 100% 找齊才給分
                 relevant_set = set(relevant_ids)
@@ -276,6 +320,7 @@ def evaluate(
             "Recall@1": None,
             "Recall@5": None,
             "Recall@10": None,
+            "Recall@50": None,
             "MRR@k": None,
             "nDCG@5": None,
             "nDCG@10": None,
@@ -289,6 +334,7 @@ def evaluate(
         "Recall@1": recall1 / eval_count,
         "Recall@5": recall5 / eval_count,
         "Recall@10": recall10 / eval_count,
+        "Recall@50": recall50 / eval_count,
         "MRR@k": mrr / eval_count,
         "nDCG@5": ndcg5 / eval_count,
         "nDCG@10": ndcg10 / eval_count,

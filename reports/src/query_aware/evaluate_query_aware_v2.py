@@ -45,13 +45,13 @@ from train_query_aware_v2 import (
 
 MODEL_NAME = 'BAAI/bge-m3'
 COARSE_K = 100            # 粗排取多少候選（增大以提高 recall ceiling）
-TOP_K = 10                # 最終取 top-k 結果
+TOP_K = 50                # 最終取 top-k 結果
 ALPHA = 0.0               # 不使用插值，直接用 QA rerank 分數
 
 QUERY_FILE = "/user_data/TabGNN/data/table/test/{source}/query.jsonl"
 GRAPH_PATH = "/user_data/TabGNN/data/processed/test/{source}/graph.pt"
 MODEL_PATH = "/user_data/TabGNN/checkpoints/{dataset}/model_query_aware_v2.pt"
-TWIG_MODEL_PATH = "/user_data/TabGNN/checkpoints/{dataset}/model.pt"
+TWIG_MODEL_PATH = "/user_data/TabGNN/checkpoints/{dataset}/model_best_edges.pt"
 RESULT_DIR = "/user_data/TabGNN/results/query_aware_v2"
 
 EVAL_PAIRS = [
@@ -190,28 +190,32 @@ def evaluate(source, dataset, coarse_k=COARSE_K, edge_mode=QUERY_EDGE_MODE):
     model.eval()
     print(f"  QA 模型載入完成 (edge_mode={ckpt_edge_mode})")
 
-    # 載入原始 TWIG 模型（用於粗排，在完整圖上運行）
+    # 載入 TWIG 模型（用於粗排）
     twig_model_path = TWIG_MODEL_PATH.format(dataset=dataset)
     twig_model = None
+    data_coarse = data_full  # 粗排用的圖（可能需過濾）
     if Path(twig_model_path).exists():
         import sys as _sys
         _sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
         from train_model import DiffusionModel
         twig_ckpt = torch.load(twig_model_path, map_location=device, weights_only=False)
         twig_hps = twig_ckpt.get('hps', hps)
-        # 使用完整圖的 metadata（TWIG 模型在完整圖上訓練）
-        twig_metadata = data_full.metadata()
+        # 若 checkpoint 有 best_edges，粗排也需過濾圖（與訓練時一致）
+        twig_best_edges = twig_ckpt.get('best_edges', None)
+        if twig_best_edges:
+            data_coarse = filter_edges(data_full, twig_best_edges)
+            print(f"  TWIG 粗排邊過濾: {twig_best_edges}")
         twig_model = DiffusionModel(
             embed_dim=embed_dim,
             hidden_channels=twig_hps.get('HIDDEN_CHANNELS', 768),
-            metadata=twig_metadata,
+            metadata=data_coarse.metadata(),
             dropout=twig_hps.get('DROPOUT', 0.1),
             sage_aggr=twig_hps.get('SAGE_AGGR', 'min'),
             hetero_aggr=twig_hps.get('HETERO_AGGR', 'max'),
         ).to(device)
         twig_model.load_state_dict(twig_ckpt['model_state_dict'], strict=False)
         twig_model.eval()
-        print(f"  TWIG 模型載入完成（完整圖，用於粗排）")
+        print(f"  TWIG 模型載入完成（用於粗排）")
 
     # 解析查詢
     queries = parse_queries(query_file, mapping_keys, key_fields)
@@ -227,13 +231,14 @@ def evaluate(source, dataset, coarse_k=COARSE_K, edge_mode=QUERY_EDGE_MODE):
     del embedder
     torch.cuda.empty_cache()
 
-    # 全圖 forward（粗排用 — 使用 TWIG 模型在完整圖上）
+    # 全圖 forward（粗排用 — 使用 TWIG 模型）
     print("  全圖 GNN forward (粗排)...")
+    data_coarse = data_coarse.to(device)
     data_full = data_full.to(device)
     data_filtered = data_filtered.to(device)
     with torch.no_grad():
         if twig_model is not None:
-            table_emb_fixed = twig_model.forward(data_full.x_dict, data_full.edge_index_dict)
+            table_emb_fixed = twig_model.forward(data_coarse.x_dict, data_coarse.edge_index_dict)
         else:
             table_emb_fixed = model.forward(data_full.x_dict, data_full.edge_index_dict)
         coarse_scores = torch.matmul(query_vecs, table_emb_fixed.T)
@@ -258,7 +263,7 @@ def evaluate(source, dataset, coarse_k=COARSE_K, edge_mode=QUERY_EDGE_MODE):
     # Query-Aware 重排序（使用分數插值）
     alpha = ALPHA
     print(f"  Query-Aware 重排序 (coarse_k={coarse_k}, alpha={alpha})...")
-    recall1 = recall2 = recall5 = recall10 = 0.0
+    recall1 = recall2 = recall5 = recall10 = recall50 = 0.0
     mrr = ndcg5 = ndcg10 = prec5 = full_recall5 = 0.0
 
     with torch.no_grad():
@@ -305,6 +310,7 @@ def evaluate(source, dataset, coarse_k=COARSE_K, edge_mode=QUERY_EDGE_MODE):
             recall2 += full_recall_at_k(retrieved, gt, 2)
             recall5 += full_recall_at_k(retrieved, gt, 5)
             recall10 += full_recall_at_k(retrieved, gt, 10)
+            recall50 += full_recall_at_k(retrieved, gt, 50)
             mrr += reciprocal_rank(retrieved, gt)
             ndcg5 += ndcg_at_k(retrieved, gt, 5)
             ndcg10 += ndcg_at_k(retrieved, gt, 10)
@@ -322,6 +328,7 @@ def evaluate(source, dataset, coarse_k=COARSE_K, edge_mode=QUERY_EDGE_MODE):
         'Recall@2': recall2 / eval_count,
         'Recall@5': recall5 / eval_count,
         'Recall@10': recall10 / eval_count,
+        'Recall@50': recall50 / eval_count,
         'MRR@k': mrr / eval_count,
         'nDCG@5': ndcg5 / eval_count,
         'nDCG@10': ndcg10 / eval_count,
@@ -337,7 +344,7 @@ def evaluate(source, dataset, coarse_k=COARSE_K, edge_mode=QUERY_EDGE_MODE):
     print(f"  E0 Baseline:   R@1={results['E0_Recall@1']:.4f}  R@5={results['E0_Recall@5']:.4f}  "
           f"R@10={results['E0_Recall@10']:.4f}  MRR={results['E0_MRR']:.4f}")
     print(f"  QA Reranked:   R@1={results['Recall@1']:.4f}  R@5={results['Recall@5']:.4f}  "
-          f"R@10={results['Recall@10']:.4f}  MRR={results['MRR@k']:.4f}")
+          f"R@10={results['Recall@10']:.4f}  R@50={results['Recall@50']:.4f}  MRR={results['MRR@k']:.4f}")
 
     # 計算改善量
     for metric in ['Recall@1', 'Recall@5', 'Recall@10']:

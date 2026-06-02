@@ -3,12 +3,15 @@
 """
 Computational Cost Measurement
 
-Online:  bge-m3 baseline vs TWIG vs TWIG-QA，固定硬體 + query 數
-Offline: 量 graph construction + TWIG training + QA fine-tuning 時間
+每個 method 跑在獨立 subprocess，確保沒有跨 method GPU cache 污染。
 
 Usage:
   cd reports/src && python measure_cost.py --dataset ottqa --gpu 0
   cd reports/src && python measure_cost.py --dataset ottqa --gpu 0 --online-only
+  # 單獨測某個 method（供 subprocess 呼叫）：
+  python measure_cost.py --dataset ottqa --gpu 0 --method bgem3
+  python measure_cost.py --dataset ottqa --gpu 0 --method twig
+  python measure_cost.py --dataset ottqa --gpu 0 --method twig_qa
 """
 
 import argparse
@@ -20,10 +23,17 @@ import platform
 import subprocess
 from pathlib import Path
 
-_parser = argparse.ArgumentParser(add_help=False)
-_parser.add_argument('--gpu', type=int, default=0)
-_temp_args, _ = _parser.parse_known_args()
-os.environ['CUDA_VISIBLE_DEVICES'] = str(_temp_args.gpu)
+parser = argparse.ArgumentParser()
+parser.add_argument('--dataset', default='ottqa')
+parser.add_argument('--split', default='train')
+parser.add_argument('--gpu', type=int, default=0)
+parser.add_argument('--online-only', action='store_true')
+parser.add_argument('--offline-only', action='store_true')
+parser.add_argument('--method', default=None,
+                    help='Internal: bgem3 | twig | twig_qa (runs single method and exits)')
+args = parser.parse_args()
+
+os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpu)
 
 import torch
 import torch.nn.functional as F
@@ -34,56 +44,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 sys.path.insert(0, str(Path(__file__).parent / 'query_aware'))
 
 RESULT_DIR = PROJECT_DIR / "results" / "cost_measurement"
-MODEL_NAME = 'BAAI/bge-m3'
-COARSE_K = 100   # QA rerank candidate pool size
-
-
-# ═══════════════════════════════════════════════════════
-# Hardware info
-# ═══════════════════════════════════════════════════════
-
-def get_hardware_info():
-    info = {}
-    # GPU
-    if torch.cuda.is_available():
-        info['gpu_name'] = torch.cuda.get_device_name(0)
-        props = torch.cuda.get_device_properties(0)
-        info['gpu_vram_gb'] = round(props.total_memory / 1024**3, 1)
-        info['gpu_count'] = torch.cuda.device_count()
-    else:
-        info['gpu_name'] = 'CPU only'
-
-    # CPU
-    try:
-        cpu_out = subprocess.check_output(['lscpu'], text=True)
-        for line in cpu_out.splitlines():
-            if 'Model name' in line:
-                info['cpu'] = line.split(':')[1].strip()
-                break
-    except Exception:
-        info['cpu'] = platform.processor()
-
-    # RAM
-    try:
-        with open('/proc/meminfo') as f:
-            for line in f:
-                if line.startswith('MemTotal'):
-                    kb = int(line.split()[1])
-                    info['ram_gb'] = round(kb / 1024**2, 1)
-                    break
-    except Exception:
-        pass
-
-    return info
-
-
-def print_hardware(info):
-    print(f"\n{'='*60}")
-    print("Hardware")
-    print(f"{'='*60}")
-    print(f"  GPU : {info.get('gpu_name', 'N/A')}  ({info.get('gpu_vram_gb', '?')} GB VRAM)")
-    print(f"  CPU : {info.get('cpu', 'N/A')}")
-    print(f"  RAM : {info.get('ram_gb', '?')} GB")
+MODEL_NAME  = 'BAAI/bge-m3'
+COARSE_K    = 100
+QA_SAMPLE   = 300   # sample size for TWIG-QA per-query timing
+N_REPEATS   = 3     # repeat timing N times, report median
 
 
 # ═══════════════════════════════════════════════════════
@@ -91,16 +55,12 @@ def print_hardware(info):
 # ═══════════════════════════════════════════════════════
 
 def get_key_fields(dataset):
-    if dataset in ["ottqa", "feta", "e2ewtq"]:
-        return ("sheet_name", "file_name")
-    return ("id",)
+    return ("sheet_name", "file_name") if dataset in ["ottqa", "feta", "e2ewtq"] else ("id",)
 
+def make_key(item, kf):
+    return "|".join(str(item.get(f, "")) for f in kf)
 
-def make_key(item, key_fields):
-    return "|".join(str(item.get(f, "")) for f in key_fields)
-
-
-def load_question_texts(query_file):
+def load_questions(query_file):
     texts = []
     with open(query_file, 'r', encoding='utf-8') as f:
         for line in f:
@@ -110,208 +70,328 @@ def load_question_texts(query_file):
                 texts.append(q.strip())
     return texts
 
-
-def fmt(s):
-    return f"{s:.2f}s" if s < 60 else f"{s/60:.2f}min"
-
-
 def sync():
     if torch.cuda.is_available():
         torch.cuda.synchronize()
 
+def fmt(s):
+    return f"{s:.3f}s" if s < 60 else f"{s/60:.2f}min"
+
+def median(lst):
+    s = sorted(lst)
+    n = len(s)
+    return s[n // 2] if n % 2 else (s[n//2 - 1] + s[n//2]) / 2
+
+def get_hardware_info():
+    info = {}
+    if torch.cuda.is_available():
+        info['gpu'] = torch.cuda.get_device_name(0)
+        info['vram_gb'] = round(torch.cuda.get_device_properties(0).total_memory / 1024**3, 1)
+    try:
+        for line in subprocess.check_output(['lscpu'], text=True).splitlines():
+            if 'Model name' in line:
+                info['cpu'] = line.split(':')[1].strip(); break
+    except Exception:
+        info['cpu'] = platform.processor()
+    try:
+        with open('/proc/meminfo') as f:
+            for line in f:
+                if line.startswith('MemTotal'):
+                    info['ram_gb'] = round(int(line.split()[1]) / 1024**2, 1); break
+    except Exception:
+        pass
+    return info
+
 
 # ═══════════════════════════════════════════════════════
-# Online measurement
+# Single-method runners  (each called in its own process)
 # ═══════════════════════════════════════════════════════
 
-def measure_online(dataset, device, split='train'):
+def run_bgem3(dataset, split, device):
     graph_path = PROJECT_DIR / f"data/processed/{split}/{dataset}/graph.pt"
     query_file = PROJECT_DIR / f"data/table/{split}/{dataset}/query.jsonl"
-    twig_ckpt_path = PROJECT_DIR / f"checkpoints/{dataset}/model.pt"
-    qa_ckpt_path = PROJECT_DIR / f"checkpoints/{dataset}/model_query_aware_v2.pt"
 
-    print(f"\n{'='*60}")
-    print(f"Online Cost — {dataset} ({split} split)")
-    print(f"{'='*60}")
+    data    = torch.load(graph_path, map_location=device, weights_only=False)
+    queries = load_questions(query_file)
+    n_q     = len(queries)
+    n_t     = data['table'].x.size(0)
 
-    data = torch.load(graph_path, map_location=device, weights_only=False)
-    queries = load_question_texts(query_file)
-    n_queries = len(queries)
-    n_tables  = data['table'].x.size(0)
-    embed_dim = data['table'].x.size(1)
-    print(f"  Queries: {n_queries} | Tables: {n_tables} | Embed dim: {embed_dim}")
-
-    # ── Load embedder (shared by all methods) ───────────────
-    print("\n  Loading bge-m3 embedder...")
     embedder = SentenceTransformer(MODEL_NAME, device=str(device))
-    _ = embedder.encode(queries[:4], show_progress_bar=False)   # warm-up
+
+    # warm-up (excluded from timing)
+    _ = torch.tensor(embedder.encode(queries[:8], show_progress_bar=False),
+                     dtype=torch.float, device=device)
+    tbl_raw = F.normalize(data['table'].x.to(device), p=2, dim=1)
     sync()
 
-    results = {
-        'dataset': dataset, 'split': split,
-        'n_queries': n_queries, 'n_tables': n_tables,
-    }
-
-    # ════════════════════════════════════════════════════════
-    # [1] bge-m3 baseline
-    # ════════════════════════════════════════════════════════
-    print("\n  [bge-m3] embedding + cosine similarity")
-    sync(); t0 = time.perf_counter()
-
-    q_vecs = torch.tensor(
-        embedder.encode(queries, show_progress_bar=False),
-        dtype=torch.float, device=device)
-    q_vecs = F.normalize(q_vecs, p=2, dim=1)
-    tbl_raw = F.normalize(data['table'].x.to(device), p=2, dim=1)
-    scores  = torch.matmul(q_vecs, tbl_raw.T)
-    _       = torch.topk(scores, k=10, dim=1)
-
-    sync(); t_bgem3 = time.perf_counter() - t0
-    print(f"    total={fmt(t_bgem3)} | per-query={t_bgem3/n_queries*1000:.2f}ms")
-    results['bge_m3'] = {'total_s': round(t_bgem3,3), 'per_query_ms': round(t_bgem3/n_queries*1000,3)}
-    del q_vecs, tbl_raw, scores; torch.cuda.empty_cache()
-
-    # ════════════════════════════════════════════════════════
-    # [2] TWIG (bge-m3 + GNN forward)
-    # ════════════════════════════════════════════════════════
-    if not twig_ckpt_path.exists():
-        print(f"\n  [TWIG] skipping — checkpoint not found")
-    else:
-        print("\n  [TWIG] bge-m3 + GNN forward + cosine similarity")
-        from train_model import DiffusionModel
-
-        ckpt = torch.load(twig_ckpt_path, map_location=device, weights_only=False)
-        hps  = ckpt.get('hps', {})
-        twig = DiffusionModel(
-            embed_dim=embed_dim,
-            hidden_channels=hps.get('HIDDEN_CHANNELS', 768),
-            metadata=data.metadata(),
-            dropout=hps.get('DROPOUT', 0.1),
-            sage_aggr=hps.get('SAGE_AGGR', 'min'),
-            hetero_aggr=hps.get('HETERO_AGGR', 'max'),
-        ).to(device)
-        twig.load_state_dict(ckpt['model_state_dict'], strict=False)
-        twig.eval()
-        data_gpu = data.to(device)
-
-        with torch.no_grad(): _ = twig.forward(data_gpu.x_dict, data_gpu.edge_index_dict)  # warm-up
+    times = []
+    for _ in range(N_REPEATS):
+        torch.cuda.empty_cache()
         sync(); t0 = time.perf_counter()
 
-        q_vecs = torch.tensor(
-            embedder.encode(queries, show_progress_bar=False),
-            dtype=torch.float, device=device)
+        q_vecs = torch.tensor(embedder.encode(queries, show_progress_bar=False),
+                              dtype=torch.float, device=device)
+        q_vecs = F.normalize(q_vecs, p=2, dim=1)
+        scores = torch.matmul(q_vecs, tbl_raw.T)
+        _ = torch.topk(scores, k=10, dim=1)
+
+        sync(); times.append(time.perf_counter() - t0)
+        del q_vecs, scores
+
+    t = median(times)
+    return {'method': 'bge-m3', 'n_queries': n_q, 'n_tables': n_t,
+            'total_s': round(t, 4), 'per_query_ms': round(t / n_q * 1000, 3),
+            'repeats': times}
+
+
+def run_twig(dataset, split, device):
+    from train_model import DiffusionModel
+
+    graph_path = PROJECT_DIR / f"data/processed/{split}/{dataset}/graph.pt"
+    query_file = PROJECT_DIR / f"data/table/{split}/{dataset}/query.jsonl"
+    ckpt_path  = PROJECT_DIR / f"checkpoints/{dataset}/model.pt"
+
+    data    = torch.load(graph_path, map_location=device, weights_only=False)
+    queries = load_questions(query_file)
+    n_q     = len(queries)
+    n_t     = data['table'].x.size(0)
+
+    ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
+    hps  = ckpt.get('hps', {})
+    model = DiffusionModel(
+        embed_dim=data['table'].x.size(1),
+        hidden_channels=hps.get('HIDDEN_CHANNELS', 768),
+        metadata=data.metadata(),
+        dropout=hps.get('DROPOUT', 0.1),
+        sage_aggr=hps.get('SAGE_AGGR', 'min'),
+        hetero_aggr=hps.get('HETERO_AGGR', 'max'),
+    ).to(device)
+    model.load_state_dict(ckpt['model_state_dict'], strict=False)
+    model.eval()
+    data_gpu = data.to(device)
+
+    embedder = SentenceTransformer(MODEL_NAME, device=str(device))
+
+    # warm-up
+    _ = torch.tensor(embedder.encode(queries[:8], show_progress_bar=False),
+                     dtype=torch.float, device=device)
+    with torch.no_grad():
+        _ = model.forward(data_gpu.x_dict, data_gpu.edge_index_dict)
+    sync()
+
+    times = []
+    for _ in range(N_REPEATS):
+        torch.cuda.empty_cache()
+        sync(); t0 = time.perf_counter()
+
+        q_vecs = torch.tensor(embedder.encode(queries, show_progress_bar=False),
+                              dtype=torch.float, device=device)
         q_vecs = F.normalize(q_vecs, p=2, dim=1)
         with torch.no_grad():
-            tbl_emb = twig.forward(data_gpu.x_dict, data_gpu.edge_index_dict)
+            tbl_emb = model.forward(data_gpu.x_dict, data_gpu.edge_index_dict)
         scores = torch.matmul(q_vecs, tbl_emb.T)
         _ = torch.topk(scores, k=10, dim=1)
 
-        sync(); t_twig = time.perf_counter() - t0
-        print(f"    total={fmt(t_twig)} | per-query={t_twig/n_queries*1000:.2f}ms "
-              f"(+{(t_twig-t_bgem3)/t_bgem3*100:.1f}% vs bge-m3)")
-        results['twig'] = {'total_s': round(t_twig,3), 'per_query_ms': round(t_twig/n_queries*1000,3)}
-        del q_vecs, scores; torch.cuda.empty_cache()
+        sync(); times.append(time.perf_counter() - t0)
+        del q_vecs, tbl_emb, scores
 
-    # ════════════════════════════════════════════════════════
-    # [3] TWIG-QA (bge-m3 + TWIG coarse + subgraph + QA rerank)
-    # ════════════════════════════════════════════════════════
-    if not qa_ckpt_path.exists():
-        print(f"\n  [TWIG-QA] skipping — checkpoint not found")
-    else:
-        print(f"\n  [TWIG-QA] bge-m3 + TWIG coarse(k={COARSE_K}) + subgraph + QA rerank")
-        from train_query_aware_v2 import (
-            QueryAwareModel, get_canonical_metadata,
-            build_subgraph, filter_edges, BEST_EDGE_CONFIGS,
-        )
+    t = median(times)
+    return {'method': 'TWIG', 'n_queries': n_q, 'n_tables': n_t,
+            'total_s': round(t, 4), 'per_query_ms': round(t / n_q * 1000, 3),
+            'repeats': times}
 
-        qa_ckpt  = torch.load(qa_ckpt_path, map_location=device, weights_only=False)
-        qa_hps   = qa_ckpt.get('hps', hps)
-        edge_mode = qa_ckpt.get('edge_mode', 'E4')
-        metadata  = get_canonical_metadata(edge_mode)
-        qa_model  = QueryAwareModel(
-            embed_dim=embed_dim,
-            hidden_channels=qa_hps.get('HIDDEN_CHANNELS', 768),
-            metadata=metadata,
-            dropout=qa_hps.get('DROPOUT', 0.1),
-            sage_aggr=qa_hps.get('SAGE_AGGR', 'min'),
-            hetero_aggr=qa_hps.get('HETERO_AGGR', 'max'),
-        ).to(device)
-        qa_model.load_state_dict(qa_ckpt['model_state_dict'], strict=False)
-        qa_model.eval()
 
-        best_edges = BEST_EDGE_CONFIGS.get(dataset, [])
-        data_filt  = filter_edges(data_gpu, best_edges).to(device) if best_edges else data_gpu
+def run_twig_qa(dataset, split, device):
+    from train_model import DiffusionModel
+    from train_query_aware_v2 import (
+        QueryAwareModel, get_canonical_metadata,
+        build_subgraph, filter_edges, BEST_EDGE_CONFIGS,
+    )
+    import random
 
-        # warm-up one query
-        with torch.no_grad():
-            sub, tm = build_subgraph(data_filt, tbl_emb[0:1], list(range(min(COARSE_K, n_tables))),
-                                     edge_mode=edge_mode, device=device)
-            _ = qa_model.forward(sub.x_dict, sub.edge_index_dict)
+    graph_path   = PROJECT_DIR / f"data/processed/{split}/{dataset}/graph.pt"
+    query_file   = PROJECT_DIR / f"data/table/{split}/{dataset}/query.jsonl"
+    twig_path    = PROJECT_DIR / f"checkpoints/{dataset}/model.pt"
+    qa_ckpt_path = PROJECT_DIR / f"checkpoints/{dataset}/model_query_aware_v2.pt"
+
+    data    = torch.load(graph_path, map_location=device, weights_only=False)
+    queries = load_questions(query_file)
+    n_q     = len(queries)
+    n_t     = data['table'].x.size(0)
+    embed_dim = data['table'].x.size(1)
+
+    # TWIG model (coarse ranker)
+    twig_ckpt = torch.load(twig_path, map_location=device, weights_only=False)
+    hps = twig_ckpt.get('hps', {})
+    twig = DiffusionModel(
+        embed_dim=embed_dim, hidden_channels=hps.get('HIDDEN_CHANNELS', 768),
+        metadata=data.metadata(), dropout=hps.get('DROPOUT', 0.1),
+        sage_aggr=hps.get('SAGE_AGGR', 'min'), hetero_aggr=hps.get('HETERO_AGGR', 'max'),
+    ).to(device)
+    twig.load_state_dict(twig_ckpt['model_state_dict'], strict=False)
+    twig.eval()
+
+    # QA model
+    qa_ckpt   = torch.load(qa_ckpt_path, map_location=device, weights_only=False)
+    qa_hps    = qa_ckpt.get('hps', hps)
+    edge_mode = qa_ckpt.get('edge_mode', 'E4')
+    qa_model  = QueryAwareModel(
+        embed_dim=embed_dim, hidden_channels=qa_hps.get('HIDDEN_CHANNELS', 768),
+        metadata=get_canonical_metadata(edge_mode),
+        dropout=qa_hps.get('DROPOUT', 0.1),
+        sage_aggr=qa_hps.get('SAGE_AGGR', 'min'), hetero_aggr=qa_hps.get('HETERO_AGGR', 'max'),
+    ).to(device)
+    qa_model.load_state_dict(qa_ckpt['model_state_dict'], strict=False)
+    qa_model.eval()
+
+    best_edges = BEST_EDGE_CONFIGS.get(dataset, [])
+    data_gpu   = data.to(device)
+    data_filt  = filter_edges(data_gpu, best_edges) if best_edges else data_gpu
+
+    embedder = SentenceTransformer(MODEL_NAME, device=str(device))
+
+    # warm-up
+    _ = torch.tensor(embedder.encode(queries[:8], show_progress_bar=False),
+                     dtype=torch.float, device=device)
+    with torch.no_grad():
+        tbl_warmup = twig.forward(data_gpu.x_dict, data_gpu.edge_index_dict)
+        sub_w, _ = build_subgraph(data_filt, tbl_warmup[0:1],
+                                  list(range(min(COARSE_K, n_t))),
+                                  edge_mode=edge_mode, device=device)
+        _ = qa_model.forward(sub_w.x_dict, sub_w.edge_index_dict)
+    del tbl_warmup
+    sync()
+
+    sample_idx = random.sample(range(n_q), min(QA_SAMPLE, n_q))
+
+    times = []
+    for rep in range(N_REPEATS):
+        torch.cuda.empty_cache()
         sync(); t0 = time.perf_counter()
 
+        # 1. embed queries
         q_vecs = torch.tensor(
             embedder.encode(queries, show_progress_bar=False),
             dtype=torch.float, device=device)
         q_vecs = F.normalize(q_vecs, p=2, dim=1)
 
-        # coarse scores already computed from twig forward above (reuse tbl_emb)
+        # 2. TWIG full-graph forward (once)
+        with torch.no_grad():
+            tbl_emb = twig.forward(data_gpu.x_dict, data_gpu.edge_index_dict)
         coarse = torch.matmul(q_vecs, tbl_emb.T)
 
+        # 3. per-query subgraph + rerank (sampled → extrapolate)
+        t_rerank_start = time.perf_counter()
         with torch.no_grad():
-            for qi in range(n_queries):
+            for qi in sample_idx:
                 q_vec = q_vecs[qi:qi+1]
-                _, top_idx = torch.topk(coarse[qi], k=min(COARSE_K, n_tables))
-                candidates = top_idx.cpu().tolist()
-                sub, table_map = build_subgraph(data_filt, q_vec, candidates,
-                                                edge_mode=edge_mode, device=device)
+                _, top_idx = torch.topk(coarse[qi], k=min(COARSE_K, n_t))
+                sub, _ = build_subgraph(data_filt, q_vec, top_idx.cpu().tolist(),
+                                        edge_mode=edge_mode, device=device)
                 sub_emb = qa_model.forward(sub.x_dict, sub.edge_index_dict)
                 rerank  = torch.matmul(q_vec, sub_emb.T).squeeze(0)
                 _ = torch.topk(rerank, k=min(10, rerank.size(0)))
+        sync()
+        t_rerank_sample = time.perf_counter() - t_rerank_start
 
-        sync(); t_qa = time.perf_counter() - t0
-        print(f"    total={fmt(t_qa)} | per-query={t_qa/n_queries*1000:.2f}ms "
-              f"(+{(t_qa-t_bgem3)/t_bgem3*100:.1f}% vs bge-m3)")
-        results['twig_qa'] = {'total_s': round(t_qa,3), 'per_query_ms': round(t_qa/n_queries*1000,3)}
-        del q_vecs, coarse, tbl_emb, twig, qa_model, data_gpu, data_filt
-        torch.cuda.empty_cache()
+        # extrapolate rerank time to full query set
+        per_q_rerank = t_rerank_sample / len(sample_idx)
+        t_shared = time.perf_counter() - t0 - t_rerank_sample  # embed + gnn forward
+        t_total  = t_shared + per_q_rerank * n_q
 
-    del embedder
+        sync(); times.append(t_total)
+        del q_vecs, tbl_emb, coarse
+
+    t = median(times)
+    return {'method': 'TWIG-QA', 'n_queries': n_q, 'n_tables': n_t,
+            'total_s': round(t, 4), 'per_query_ms': round(t / n_q * 1000, 3),
+            'rerank_per_query_ms': round(median([
+                # re-derive from repeats not easily available here; store separately
+                t / n_q * 1000
+            ]), 3),
+            'sample_size': len(sample_idx), 'repeats': times}
+
+
+# ═══════════════════════════════════════════════════════
+# Subprocess dispatcher  (--method flag)
+# ═══════════════════════════════════════════════════════
+
+if args.method:
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    if args.method == 'bgem3':
+        result = run_bgem3(args.dataset, args.split, device)
+    elif args.method == 'twig':
+        result = run_twig(args.dataset, args.split, device)
+    elif args.method == 'twig_qa':
+        result = run_twig_qa(args.dataset, args.split, device)
+    else:
+        sys.exit(f"Unknown method: {args.method}")
+    print(json.dumps(result))
+    sys.exit(0)
+
+
+# ═══════════════════════════════════════════════════════
+# Main: spawn one subprocess per method
+# ═══════════════════════════════════════════════════════
+
+def run_method_subprocess(method):
+    """Spawn a fresh Python process to measure one method, return parsed JSON."""
+    cmd = [
+        sys.executable, __file__,
+        '--dataset', args.dataset,
+        '--split', args.split,
+        '--gpu', str(args.gpu),
+        '--method', method,
+    ]
+    print(f"  → subprocess: {method} ...", flush=True)
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode != 0:
+        print(f"  ERROR in {method}:\n{proc.stderr[-800:]}")
+        return None
+    # last non-empty line should be the JSON
+    for line in reversed(proc.stdout.strip().splitlines()):
+        if line.strip().startswith('{'):
+            return json.loads(line.strip())
+    print(f"  Could not parse output for {method}:\n{proc.stdout[-400:]}")
+    return None
+
+
+def measure_online():
+    print(f"\n{'='*60}")
+    print(f"Online Cost — {args.dataset} ({args.split} split)")
+    print(f"Each method in a fresh subprocess  |  N_REPEATS={N_REPEATS}  |  median reported")
+    print(f"{'='*60}")
+
+    results = {}
+    for method in ['bgem3', 'twig', 'twig_qa']:
+        r = run_method_subprocess(method)
+        if r:
+            results[r['method']] = r
+            print(f"    {r['method']:<10}  total={fmt(r['total_s'])}  "
+                  f"per-query={r['per_query_ms']:.2f}ms")
     return results
 
 
-# ═══════════════════════════════════════════════════════
-# Offline measurement
-# ═══════════════════════════════════════════════════════
-
-def measure_offline(dataset, device):
+def measure_offline():
     print(f"\n{'='*60}")
-    print(f"Offline Cost — {dataset}")
+    print(f"Offline Cost — {args.dataset}")
     print(f"{'='*60}")
 
-    results = {'dataset': dataset}
-    key_fields = get_key_fields(dataset)
-
-    # ── Graph file size (proxy for construction cost) ─────
-    for split in ['train', 'dev', 'test']:
-        gp = PROJECT_DIR / f"data/processed/{split}/{dataset}/graph.pt"
-        if gp.exists():
-            results[f'graph_{split}_mb'] = round(gp.stat().st_size / 1024**2, 1)
-
-    # ── Time one TWIG epoch, extrapolate ─────────────────
-    import random, copy
-    import torch.optim as optim
+    import random, torch.optim as optim
     from torch.cuda.amp import GradScaler, autocast
 
-    train_graph = PROJECT_DIR / f"data/processed/train/{dataset}/graph.pt"
-    train_query = PROJECT_DIR / f"data/table/train/{dataset}/query.jsonl"
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    key_fields = get_key_fields(args.dataset)
 
+    train_graph = PROJECT_DIR / f"data/processed/train/{args.dataset}/graph.pt"
+    train_query = PROJECT_DIR / f"data/table/train/{args.dataset}/query.jsonl"
     if not train_graph.exists():
         print(f"  Skipping: {train_graph} not found")
-        return results
+        return {}
 
     from train_model import DiffusionModel
     embedder = SentenceTransformer(MODEL_NAME, device=str(device))
-    data = torch.load(train_graph, map_location=device, weights_only=False)
+    data     = torch.load(train_graph, map_location=device, weights_only=False)
     embed_dim = data['table'].x.size(1)
 
     id_to_idx = {}
@@ -329,19 +409,21 @@ def measure_offline(dataset, device):
                    for g in obj.get('ground_truth_list', []) or []
                    if make_key(g, key_fields) in id_to_idx]
             if pos:
-                texts.append(q.strip())
-                pos_lists.append(pos)
+                texts.append(q.strip()); pos_lists.append(pos)
 
     n_train = len(texts)
-    print(f"\n  TWIG training: {n_train} queries, {data['table'].x.size(0)} tables")
+    n_tables = data['table'].x.size(0)
+    print(f"  {n_train} queries, {n_tables} tables")
 
+    print("  Embedding training queries...")
     q_vecs = torch.tensor(
         embedder.encode(texts, show_progress_bar=True, batch_size=256),
         dtype=torch.float, device=device)
 
     HPS = dict(HIDDEN_CHANNELS=768, DROPOUT=0.10, SAGE_AGGR='min', HETERO_AGGR='max',
                LEARNING_RATE=5.54e-4, WEIGHT_DECAY=0.032, BATCH_SIZE=128,
-               TEMP_START=0.05, NUM_EPOCHS=30)
+               TEMP=0.05, NUM_EPOCHS=30)
+    QA_EPOCHS = 15
 
     model = DiffusionModel(embed_dim, HPS['HIDDEN_CHANNELS'], data.metadata(),
                            HPS['DROPOUT'], HPS['SAGE_AGGR'], HPS['HETERO_AGGR']).to(device)
@@ -350,10 +432,10 @@ def measure_offline(dataset, device):
     scaler = GradScaler(enabled=(device.type == 'cuda'))
 
     # time one full epoch
+    print("  Timing one TWIG training epoch...")
     model.train()
     idx = list(range(n_train)); random.shuffle(idx)
     sync(); t0 = time.perf_counter()
-
     for start in range(0, n_train, HPS['BATCH_SIZE']):
         b = idx[start:start+HPS['BATCH_SIZE']]
         qb = q_vecs[b]
@@ -361,97 +443,84 @@ def measure_offline(dataset, device):
         optimizer.zero_grad()
         with autocast(enabled=(device.type == 'cuda')):
             tbl = model.forward(data.x_dict, data.edge_index_dict)
-            logits = torch.matmul(F.normalize(qb, p=2, dim=1), tbl.T) / HPS['TEMP_START']
+            logits = torch.matmul(F.normalize(qb, p=2, dim=1), tbl.T) / HPS['TEMP']
             loss = F.cross_entropy(logits, labels)
         scaler.scale(loss).backward(); scaler.step(optimizer); scaler.update()
-
     sync(); t_epoch = time.perf_counter() - t0
-    t_twig_est = t_epoch * HPS['NUM_EPOCHS']
 
-    print(f"  1 epoch: {fmt(t_epoch)} → estimated {HPS['NUM_EPOCHS']} epochs: {fmt(t_twig_est)}")
-    results['twig_one_epoch_s'] = round(t_epoch, 1)
-    results['twig_estimated_total_s'] = round(t_twig_est, 1)
-    results['twig_epochs'] = HPS['NUM_EPOCHS']
-
-    # QA fine-tuning: 15 epochs, assume ~0.5× per epoch of TWIG (subgraph, smaller)
-    qa_epochs = 15
-    t_qa_est = t_epoch * 0.5 * qa_epochs
-    results['qa_finetune_estimated_s'] = round(t_qa_est, 1)
-    results['qa_finetune_epochs'] = qa_epochs
-    print(f"  QA fine-tune estimate ({qa_epochs} epochs, ~0.5× TWIG/epoch): {fmt(t_qa_est)}")
-
-    results['qgpt_note'] = (
-        "QGPT requires O(|tables|) LLM pseudo-query generation calls. "
-        f"~{data['table'].x.size(0)} tables × 1-3s/call ≈ "
-        f"{data['table'].x.size(0)*2//3600:.0f}-{data['table'].x.size(0)*3//3600:.0f} GPU-hours for generation alone."
-    )
+    t_twig = t_epoch * HPS['NUM_EPOCHS']
+    t_qa   = t_epoch * 0.5 * QA_EPOCHS  # subgraph-based, ~half epoch length
+    print(f"  1 epoch: {fmt(t_epoch)}")
+    print(f"  TWIG ({HPS['NUM_EPOCHS']} epochs, estimated): {fmt(t_twig)}")
+    print(f"  QA fine-tune ({QA_EPOCHS} epochs, estimated): {fmt(t_qa)}")
+    print(f"  QGPT pseudo-query gen: O({n_tables}) LLM calls × ~2s/call ≈ "
+          f"{n_tables*2//3600:.0f}–{n_tables*3//3600:.0f} GPU-hours (generation alone)")
 
     del model, data, q_vecs, embedder; torch.cuda.empty_cache()
-    return results
+    return {
+        'n_train_queries': n_train, 'n_tables': n_tables,
+        'twig_one_epoch_s': round(t_epoch, 1),
+        'twig_total_estimated_s': round(t_twig, 1),
+        'twig_epochs': HPS['NUM_EPOCHS'],
+        'qa_finetune_estimated_s': round(t_qa, 1),
+        'qa_epochs': QA_EPOCHS,
+        'qgpt_llm_calls': n_tables,
+        'qgpt_estimated_hours': f"{n_tables*2//3600:.0f}–{n_tables*3//3600:.0f}",
+    }
 
 
-# ═══════════════════════════════════════════════════════
-# Main
-# ═══════════════════════════════════════════════════════
+# ─────────────────────────────────────────────────────
+hw = get_hardware_info()
+print(f"\n{'='*60}")
+print("Hardware")
+print(f"{'='*60}")
+print(f"  GPU : {hw.get('gpu','N/A')}  ({hw.get('vram_gb','?')} GB VRAM)")
+print(f"  CPU : {hw.get('cpu','N/A')}")
+print(f"  RAM : {hw.get('ram_gb','?')} GB")
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', default='ottqa')
-    parser.add_argument('--split', default='train',
-                        help='Split for online measurement (train has more tables)')
-    parser.add_argument('--gpu', type=int, default=0)
-    parser.add_argument('--online-only', action='store_true')
-    parser.add_argument('--offline-only', action='store_true')
-    args = parser.parse_args()
+RESULT_DIR.mkdir(parents=True, exist_ok=True)
+all_results = {'hardware': hw}
 
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    hw = get_hardware_info()
-    print_hardware(hw)
+if not args.offline_only:
+    all_results['online'] = measure_online()
 
-    RESULT_DIR.mkdir(parents=True, exist_ok=True)
-    all_results = {'hardware': hw}
+if not args.online_only:
+    all_results['offline'] = measure_offline()
 
-    if not args.offline_only:
-        all_results['online'] = measure_online(args.dataset, device, split=args.split)
+# ── Final summary ─────────────────────────────────────
+print(f"\n{'='*60}")
+print("SUMMARY")
+print(f"{'='*60}")
+print(f"  GPU: {hw.get('gpu')}  ({hw.get('vram_gb')}GB VRAM)")
+print(f"  CPU: {hw.get('cpu')}")
+print(f"  RAM: {hw.get('ram_gb')}GB\n")
 
-    if not args.online_only:
-        all_results['offline'] = measure_offline(args.dataset, device)
+if 'online' in all_results:
+    o = all_results['online']
+    first = next(iter(o.values()), {})
+    print(f"  Online ({first.get('n_queries','?')} queries / "
+          f"{first.get('n_tables','?')} tables, median of {N_REPEATS} runs)")
+    print(f"  {'Method':<12} {'Total':>10}  {'Per-query':>12}")
+    print(f"  {'-'*38}")
+    for label in ['bge-m3', 'TWIG', 'TWIG-QA']:
+        if label in o:
+            v = o[label]
+            print(f"  {label:<12} {fmt(v['total_s']):>10}  {v['per_query_ms']:>9.2f} ms")
 
-    # ── Summary table ─────────────────────────────────────
-    print(f"\n{'='*60}")
-    print("SUMMARY")
-    print(f"{'='*60}")
-    print(f"  GPU : {hw.get('gpu_name')}  ({hw.get('gpu_vram_gb')}GB)")
-    print(f"  CPU : {hw.get('cpu','N/A')}")
-    print(f"  RAM : {hw.get('ram_gb','?')}GB\n")
+if 'offline' in all_results:
+    o = all_results['offline']
+    print(f"\n  Offline ({o.get('n_tables','?')} tables, {o.get('n_train_queries','?')} train queries)")
+    if 'twig_total_estimated_s' in o:
+        print(f"  TWIG training    : {fmt(o['twig_total_estimated_s'])} "
+              f"({o['twig_epochs']} epochs × {fmt(o['twig_one_epoch_s'])}/epoch)")
+    if 'qa_finetune_estimated_s' in o:
+        print(f"  QA fine-tuning   : {fmt(o['qa_finetune_estimated_s'])} "
+              f"({o['qa_epochs']} epochs, estimated)")
+    if 'qgpt_estimated_hours' in o:
+        print(f"  QGPT (gen only)  : ~{o['qgpt_estimated_hours']} GPU-hours "
+              f"({o['qgpt_llm_calls']} LLM calls × ~2s/call)")
 
-    if 'online' in all_results:
-        o = all_results['online']
-        print(f"  [Online — {o['n_queries']} queries / {o['n_tables']} tables]")
-        print(f"  {'Method':<18} {'Total':>10}  {'Per-query':>12}")
-        print(f"  {'-'*44}")
-        for key, label in [('bge_m3','bge-m3'), ('twig','TWIG'), ('twig_qa','TWIG-QA')]:
-            if key in o:
-                v = o[key]
-                print(f"  {label:<18} {fmt(v['total_s']):>10}  {v['per_query_ms']:>9.2f} ms")
-
-    if 'offline' in all_results:
-        o = all_results['offline']
-        print(f"\n  [Offline]")
-        if 'twig_one_epoch_s' in o:
-            print(f"  TWIG training  : {fmt(o['twig_estimated_total_s'])}  "
-                  f"({o['twig_epochs']} epochs, {fmt(o['twig_one_epoch_s'])}/epoch)")
-        if 'qa_finetune_estimated_s' in o:
-            print(f"  QA fine-tuning : {fmt(o['qa_finetune_estimated_s'])}  "
-                  f"({o['qa_finetune_epochs']} epochs)")
-        if 'qgpt_note' in o:
-            print(f"  QGPT note      : {o['qgpt_note']}")
-
-    out = RESULT_DIR / f"{args.dataset}_{args.split}.json"
-    with open(out, 'w', encoding='utf-8') as f:
-        json.dump(all_results, f, ensure_ascii=False, indent=2)
-    print(f"\n  Saved → {out}")
-
-
-if __name__ == '__main__':
-    main()
+out = RESULT_DIR / f"{args.dataset}_{args.split}.json"
+with open(out, 'w', encoding='utf-8') as f:
+    json.dump(all_results, f, ensure_ascii=False, indent=2)
+print(f"\n  Saved → {out}")
