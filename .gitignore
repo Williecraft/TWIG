@@ -11,3 +11,7 @@ checkpoints/
 *.pdf
 *.docx
 reports/*.log
+# transient ablation run artifacts
+logs/
+results/qa_edge_ablation_shards/
+results/qa_edge_ablation_buggy_backup_*/
