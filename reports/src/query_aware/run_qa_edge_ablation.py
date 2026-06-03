@@ -114,7 +114,7 @@ QA_LABEL_SMOOTH = 0.08
 
 # --- Phase 3: Evaluation hyperparameters ---
 EVAL_COARSE_K = 100
-EVAL_TOP_K = 10
+EVAL_TOP_K = 50   # 取 top-50 以計算 R@50
 EVAL_ALPHA = 0.0  # 不使用插值，直接用 QA rerank 分數
 
 
@@ -982,162 +982,151 @@ def ndcg_at_k(retrieved, relevant, k):
     return dcg / idcg if idcg > 0 else 0.0
 
 
-def evaluate_qa(twig_state_dict, qa_state_dict, edges, dataset, key_fields, device, embedder):
-    """Evaluate QA v2 model on test set."""
-    test_graph_path = str(PROJECT_DIR / f"data/processed/test/{dataset}/graph.pt")
-    test_query_path = str(PROJECT_DIR / f"data/table/test/{dataset}/query.jsonl")
+def _run_eval_on_split(twig_state_dict, qa_state_dict, edges, dataset, key_fields,
+                       device, embedder, split):
+    """
+    在指定 split（'dev' 或 'test'）上跑完整評估。
+    回傳 dict 含 QA_R@1/5/10, QA_MRR, TWIG_R@1/5/10, TWIG_MRR。
+    """
+    graph_path = str(PROJECT_DIR / f"data/processed/{split}/{dataset}/graph.pt")
+    query_path = str(PROJECT_DIR / f"data/table/{split}/{dataset}/query.jsonl")
 
-    if not Path(test_graph_path).exists():
-        print(f"      [Eval] Skipping: {test_graph_path} not found")
+    if not Path(graph_path).exists():
         return None
 
-    data_full = torch.load(test_graph_path, map_location=device, weights_only=False)
+    data_full = torch.load(graph_path, map_location=device, weights_only=False)
     id_to_idx = build_id_to_idx(data_full, key_fields)
     idx_to_id = {v: k for k, v in id_to_idx.items()}
     mapping_keys = set(idx_to_id.values())
     embed_dim = data_full['table'].x.size(1)
 
-    # Filtered graph for QA subgraphs
-    if edges:
-        data_filtered = filter_edges(data_full, edges)
-    else:
-        data_filtered = data_full
+    data_filtered = filter_edges(data_full, edges) if edges else data_full
 
-    # Load QA model
     metadata = get_canonical_metadata(QA_QUERY_EDGE_MODE)
-    qa_model = QueryAwareModel(
-        embed_dim=embed_dim,
-        hidden_channels=768,
-        metadata=metadata,
-        dropout=0.10,
-        sage_aggr='min',
-        hetero_aggr='max',
-    ).to(device)
+    qa_model = QueryAwareModel(embed_dim=embed_dim, hidden_channels=768, metadata=metadata,
+                               dropout=0.10, sage_aggr='min', hetero_aggr='max').to(device)
     qa_model.load_state_dict(qa_state_dict, strict=False)
     qa_model.eval()
 
-    # Load TWIG model for coarse ranking (on full graph)
-    twig_metadata = data_full.metadata()
-    twig_model = DiffusionModel(
-        embed_dim=embed_dim,
-        hidden_channels=768,
-        metadata=twig_metadata,
-        dropout=0.10,
-        sage_aggr='min',
-        hetero_aggr='max',
-    ).to(device)
+    twig_model = DiffusionModel(embed_dim=embed_dim, hidden_channels=768,
+                                metadata=data_full.metadata(),
+                                dropout=0.10, sage_aggr='min', hetero_aggr='max').to(device)
     twig_model.load_state_dict(twig_state_dict, strict=False)
     twig_model.eval()
 
-    # Parse queries
     queries = []
-    with open(test_query_path, 'r', encoding='utf-8') as f:
+    with open(query_path, 'r', encoding='utf-8') as f:
         for line in f:
             obj = json.loads(line)
-            question = None
-            if 'questions' in obj:
-                question = obj['questions'][0].strip()
-            elif 'question' in obj:
-                question = obj['question'].strip()
-            if not question:
+            q = obj.get('questions', [None])[0] if 'questions' in obj else obj.get('question')
+            if not q or not q.strip():
                 continue
-
-            gt_list = obj.get('ground_truth_list', []) or []
-            gt_keys = set()
-            for gt in gt_list:
-                if all(gt.get(field) is not None for field in key_fields):
-                    key = make_key(gt, key_fields)
-                    if key in mapping_keys:
-                        gt_keys.add(key)
-            queries.append((question, gt_keys))
+            gt_keys = {make_key(gt, key_fields)
+                       for gt in (obj.get('ground_truth_list') or [])
+                       if all(gt.get(fld) is not None for fld in key_fields)
+                       and make_key(gt, key_fields) in mapping_keys}
+            queries.append((q.strip(), gt_keys))
 
     questions = [q for q, _ in queries]
-    relevants = [gt for _, gt in queries]
-    total = len(queries)
-    eval_count = sum(1 for gt in relevants if len(gt) > 0)
+    relevants  = [gt for _, gt in queries]
+    total      = len(queries)
+    eval_count = sum(1 for gt in relevants if gt)
 
-    # Embed queries
-    print(f"      [Eval] Embedding {total} test queries...")
-    query_vecs = torch.tensor(
-        embedder.encode(questions, show_progress_bar=False),
-        dtype=torch.float, device=device)
+    print(f"      [Eval/{split}] {total} queries, {eval_count} with GT")
+    query_vecs = torch.tensor(embedder.encode(questions, show_progress_bar=False),
+                              dtype=torch.float, device=device)
     query_vecs = F.normalize(query_vecs, p=2, dim=1)
 
-    # Coarse ranking with TWIG
-    data_full = data_full.to(device)
+    data_full     = data_full.to(device)
     data_filtered = data_filtered.to(device)
     with torch.no_grad():
-        table_emb_fixed = twig_model.forward(data_full.x_dict, data_full.edge_index_dict)
-        coarse_scores = torch.matmul(query_vecs, table_emb_fixed.T)
+        tbl_fixed    = twig_model.forward(data_full.x_dict, data_full.edge_index_dict)
+        coarse_scores = torch.matmul(query_vecs, tbl_fixed.T)
+    del twig_model; torch.cuda.empty_cache()
 
-    del twig_model
-    torch.cuda.empty_cache()
-
-    # TWIG baseline
-    e0_r1 = e0_r5 = e0_r10 = e0_mrr = 0.0
+    e0_r1 = e0_r2 = e0_r5 = e0_r10 = e0_r50 = e0_mrr = 0.0
     for qi in range(total):
         gt = relevants[qi]
-        if not gt:
-            continue
-        _, top_idx = torch.topk(coarse_scores[qi], k=min(EVAL_TOP_K, coarse_scores.size(1)))
-        retrieved = [idx_to_id.get(idx.item(), "") for idx in top_idx]
-        e0_r1 += full_recall_at_k(retrieved, gt, 1)
-        e0_r5 += full_recall_at_k(retrieved, gt, 5)
-        e0_r10 += full_recall_at_k(retrieved, gt, 10)
-        e0_mrr += reciprocal_rank(retrieved, gt)
+        if not gt: continue
+        _, ti = torch.topk(coarse_scores[qi], k=min(EVAL_TOP_K, coarse_scores.size(1)))
+        ret = [idx_to_id.get(i.item(), "") for i in ti]
+        e0_r1  += full_recall_at_k(ret, gt, 1)
+        e0_r2  += full_recall_at_k(ret, gt, 2)
+        e0_r5  += full_recall_at_k(ret, gt, 5)
+        e0_r10 += full_recall_at_k(ret, gt, 10)
+        e0_r50 += full_recall_at_k(ret, gt, 50)
+        e0_mrr += reciprocal_rank(ret, gt)
 
-    # QA reranking
-    r1 = r5 = r10 = mrr_sum = ndcg10_sum = 0.0
+    r1 = r2 = r5 = r10 = r50 = mrr_sum = ndcg10_sum = 0.0
     with torch.no_grad():
-        for qi in tqdm(range(total), desc="      QA Rerank", leave=False):
+        for qi in tqdm(range(total), desc=f"      QA Rerank [{split}]", leave=False):
             gt = relevants[qi]
-            if not gt:
-                continue
-
-            q_vec = query_vecs[qi:qi + 1]
+            if not gt: continue
+            q_vec = query_vecs[qi:qi+1]
             top_k_scores, top_k_idx = torch.topk(
                 coarse_scores[qi], k=min(EVAL_COARSE_K, coarse_scores.size(1)))
-            candidate_indices = top_k_idx.cpu().tolist()
-
+            candidates = top_k_idx.cpu().tolist()
             subgraph, table_mapping = build_subgraph(
-                data_filtered, q_vec, candidate_indices,
+                data_filtered, q_vec, candidates,
                 edge_mode=QA_QUERY_EDGE_MODE, device=device)
-            sub_table_emb = qa_model.forward(subgraph.x_dict, subgraph.edge_index_dict)
-
-            rerank_scores = torch.matmul(q_vec, sub_table_emb.T).squeeze(0)
-            coarse_in_sub = torch.zeros(rerank_scores.size(0), device=device)
-            for orig_rank, orig_idx in enumerate(candidate_indices):
-                new_idx = table_mapping.get(orig_idx, -1)
-                if 0 <= new_idx < coarse_in_sub.size(0):
-                    coarse_in_sub[new_idx] = top_k_scores[orig_rank]
-
-            final_scores = rerank_scores  # 直接用 QA rerank 分數（不與粗排插值）
+            sub_emb = qa_model.forward(subgraph.x_dict, subgraph.edge_index_dict)
+            final_scores = torch.matmul(q_vec, sub_emb.T).squeeze(0)  # alpha=0
             _, reranked = torch.topk(final_scores, k=min(EVAL_TOP_K, final_scores.size(0)))
-
             new_to_old = {v: k for k, v in table_mapping.items()}
-            retrieved = [idx_to_id.get(new_to_old.get(idx.item(), -1), "") for idx in reranked]
+            ret = [idx_to_id.get(new_to_old.get(i.item(), -1), "") for i in reranked]
+            r1   += full_recall_at_k(ret, gt, 1)
+            r2   += full_recall_at_k(ret, gt, 2)
+            r5   += full_recall_at_k(ret, gt, 5)
+            r10  += full_recall_at_k(ret, gt, 10)
+            r50  += full_recall_at_k(ret, gt, 50)
+            mrr_sum    += reciprocal_rank(ret, gt)
+            ndcg10_sum += ndcg_at_k(ret, gt, 10)
 
-            r1 += full_recall_at_k(retrieved, gt, 1)
-            r5 += full_recall_at_k(retrieved, gt, 5)
-            r10 += full_recall_at_k(retrieved, gt, 10)
-            mrr_sum += reciprocal_rank(retrieved, gt)
-            ndcg10_sum += ndcg_at_k(retrieved, gt, 10)
+    del qa_model, data_full, data_filtered, query_vecs; torch.cuda.empty_cache()
 
-    del qa_model, data_full, data_filtered, query_vecs
-    torch.cuda.empty_cache()
-
-    results = {
+    ec = max(1, eval_count)
+    return {
         'eval_count': eval_count,
-        'QA_R@1': r1 / max(1, eval_count),
-        'QA_R@5': r5 / max(1, eval_count),
-        'QA_R@10': r10 / max(1, eval_count),
-        'QA_MRR': mrr_sum / max(1, eval_count),
-        'QA_nDCG@10': ndcg10_sum / max(1, eval_count),
-        'TWIG_R@1': e0_r1 / max(1, eval_count),
-        'TWIG_R@5': e0_r5 / max(1, eval_count),
-        'TWIG_R@10': e0_r10 / max(1, eval_count),
-        'TWIG_MRR': e0_mrr / max(1, eval_count),
+        'QA_R@1':     r1   / ec,
+        'QA_R@2':     r2   / ec,
+        'QA_R@5':     r5   / ec,
+        'QA_R@10':    r10  / ec,
+        'QA_R@50':    r50  / ec,
+        'QA_MRR':     mrr_sum    / ec,
+        'QA_nDCG@10': ndcg10_sum / ec,
+        'TWIG_R@1':   e0_r1  / ec,
+        'TWIG_R@2':   e0_r2  / ec,
+        'TWIG_R@5':   e0_r5  / ec,
+        'TWIG_R@10':  e0_r10 / ec,
+        'TWIG_R@50':  e0_r50 / ec,
+        'TWIG_MRR':   e0_mrr / ec,
     }
+
+
+def evaluate_qa(twig_state_dict, qa_state_dict, edges, dataset, key_fields, device, embedder):
+    """
+    用 dev set 選邊（QA_R@10 是 dev 分數），同時也記錄 test set 分數。
+    回傳結果中 QA_R@10 = dev score（用於 config selection）。
+    test set 分數存在 test_* 欄位（用於最終報告）。
+    """
+    # Dev set：用來選最佳邊（避免 test set 洩漏）
+    dev_results = _run_eval_on_split(twig_state_dict, qa_state_dict, edges,
+                                     dataset, key_fields, device, embedder, split='dev')
+    if dev_results is None:
+        print(f"      [Eval] Skipping: dev graph not found for {dataset}")
+        return None
+
+    # Test set：用來最終報告（不參與 config selection）
+    test_results = _run_eval_on_split(twig_state_dict, qa_state_dict, edges,
+                                      dataset, key_fields, device, embedder, split='test')
+
+    # 主要指標 = dev（供 run_single_ablation 選最佳 config）
+    results = dict(dev_results)
+    # 額外存 test 分數
+    if test_results:
+        for k, v in test_results.items():
+            results[f'test_{k}'] = v
+
     return results
 
 

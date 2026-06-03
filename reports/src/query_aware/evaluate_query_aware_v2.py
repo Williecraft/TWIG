@@ -51,7 +51,7 @@ ALPHA = 0.0               # 不使用插值，直接用 QA rerank 分數
 QUERY_FILE = "/user_data/TabGNN/data/table/test/{source}/query.jsonl"
 GRAPH_PATH = "/user_data/TabGNN/data/processed/test/{source}/graph.pt"
 MODEL_PATH = "/user_data/TabGNN/checkpoints/{dataset}/model_query_aware_v2.pt"
-TWIG_MODEL_PATH = "/user_data/TabGNN/checkpoints/{dataset}/model_best_edges.pt"
+TWIG_MODEL_PATH = "/user_data/TabGNN/checkpoints/{dataset}/model_qa_best_edges.pt"
 RESULT_DIR = "/user_data/TabGNN/results/query_aware_v2"
 
 EVAL_PAIRS = [

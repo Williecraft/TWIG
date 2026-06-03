@@ -1,0 +1,82 @@
+/user_data/TabGNN/reports/src/train_twig_qa_best.py:216: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  scaler = GradScaler(enabled=(device.type == 'cuda'))
+/user_data/TabGNN/reports/src/train_twig_qa_best.py:236: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(enabled=(device.type == 'cuda')):
+/user_data/TabGNN/.venv/lib/python3.10/site-packages/torch_geometric/utils/_scatter.py:91: UserWarning: The usage of `scatter(reduce='min')` can be accelerated via the 'torch-scatter' package, but it was not found
+  warnings.warn(
+Device: cuda
+
+============================================================
+Training TWIG for feta with QA-best edges
+  Edges: ['similar_table', 'has_column', 'comes_from', 'same_page', 'shared_column_name']
+============================================================
+  Embedding 7324 train queries...
+    Epoch  1 | Loss 8.1997 | Val R@10 0.6480 | Best 0.6480 (ep 1)
+    Epoch  5 | Loss 4.2652 | Val R@10 0.9460 | Best 0.9460 (ep 5)
+    Epoch 10 | Loss 2.1760 | Val R@10 0.9420 | Best 0.9500 (ep 9)
+    Epoch 15 | Loss 1.5672 | Val R@10 0.9500 | Best 0.9500 (ep 9)
+    Early stopping at epoch 19
+  Saved → /user_data/TabGNN/checkpoints/feta/model_qa_best_edges.pt  (val R@10=0.9500, epoch=9)
+
+============================================================
+Training TWIG for ottqa with QA-best edges
+  Edges: ['similar_table', 'has_column', 'comes_from', 'same_page', 'similar_content', 'shared_column_name']
+============================================================
+  Embedding 41468 train queries...
+    Epoch  1 | Loss 5.8849 | Val R@10 0.9837 | Best 0.9837 (ep 1)
+    Epoch  5 | Loss 4.0713 | Val R@10 0.9566 | Best 0.9837 (ep 1)
+    Epoch 10 | Loss 2.8506 | Val R@10 0.9530 | Best 0.9837 (ep 1)
+    Early stopping at epoch 11
+  Saved → /user_data/TabGNN/checkpoints/ottqa/model_qa_best_edges.pt  (val R@10=0.9837, epoch=1)
+
+============================================================
+Training TWIG for mimo_en with QA-best edges
+  Edges: ['similar_table', 'comes_from', 'same_page', 'shared_column_name']
+============================================================
+  Embedding 499 train queries...
+    Epoch  1 | Loss 7.6265 | Val R@10 0.5000 | Best 0.5000 (ep 1)
+    Epoch  5 | Loss 3.6113 | Val R@10 0.6719 | Best 0.6719 (ep 5)
+    Epoch 10 | Loss 1.7963 | Val R@10 0.7500 | Best 0.7656 (ep 8)
+    Epoch 15 | Loss 1.2827 | Val R@10 0.7188 | Best 0.7656 (ep 8)
+    Early stopping at epoch 18
+  Saved → /user_data/TabGNN/checkpoints/mimo_en/model_qa_best_edges.pt  (val R@10=0.7656, epoch=8)
+
+============================================================
+Training TWIG for mimo_ch with QA-best edges
+  Edges: ['has_column', 'comes_from', 'same_page', 'similar_content']
+============================================================
+  Embedding 771 train queries...
+    Epoch  1 | Loss 7.3933 | Val R@10 0.4124 | Best 0.4124 (ep 1)
+    Epoch  5 | Loss 3.6027 | Val R@10 0.7010 | Best 0.7113 (ep 4)
+    Epoch 10 | Loss 2.1069 | Val R@10 0.7732 | Best 0.7732 (ep 8)
+    Epoch 15 | Loss 1.4975 | Val R@10 0.7423 | Best 0.7732 (ep 8)
+    Early stopping at epoch 18
+  Saved → /user_data/TabGNN/checkpoints/mimo_ch/model_qa_best_edges.pt  (val R@10=0.7732, epoch=8)
+
+============================================================
+Training TWIG for e2ewtq with QA-best edges
+  Edges: ['has_column', 'shared_column_name']
+============================================================
+  Embedding 850 train queries...
+    Epoch  1 | Loss 8.4021 | Val R@10 0.6500 | Best 0.6500 (ep 1)
+    Epoch  5 | Loss 2.8359 | Val R@10 0.9000 | Best 0.9000 (ep 5)
+    Epoch 10 | Loss 1.2734 | Val R@10 0.8333 | Best 0.9000 (ep 5)
+    Epoch 15 | Loss 1.0024 | Val R@10 0.9000 | Best 0.9000 (ep 5)
+    Early stopping at epoch 15
+  Saved → /user_data/TabGNN/checkpoints/e2ewtq/model_qa_best_edges.pt  (val R@10=0.9000, epoch=5)
+
+============================================================
+Training TWIG for mmqa with QA-best edges
+  Edges: ['has_column', 'comes_from', 'similar_content', 'shared_column_name']
+============================================================
+  Embedding 1974 train queries...
+    Epoch  1 | Loss 5.4293 | Val R@10 0.9228 | Best 0.9228 (ep 1)
+    Epoch  5 | Loss 1.7204 | Val R@10 0.9715 | Best 0.9715 (ep 5)
+    Epoch 10 | Loss 1.2469 | Val R@10 0.9675 | Best 0.9756 (ep 6)
+    Epoch 15 | Loss 1.0371 | Val R@10 0.9756 | Best 0.9797 (ep 11)
+    Epoch 20 | Loss 0.8881 | Val R@10 0.9675 | Best 0.9797 (ep 11)
+    Early stopping at epoch 21
+  Saved → /user_data/TabGNN/checkpoints/mmqa/model_qa_best_edges.pt  (val R@10=0.9797, epoch=11)
+
+Done.
+[Wed 03 Jun 2026 02:48:22 PM UTC] TWIG done, starting QA fine-tune...

@@ -1,0 +1,10 @@
+/user_data/TabGNN/reports/src/query_aware/run_qa_edge_ablation.py:381: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  scaler = GradScaler(enabled=(device.type == 'cuda'))
+/user_data/TabGNN/reports/src/query_aware/run_qa_edge_ablation.py:416: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(enabled=(device.type == 'cuda')):
+/user_data/TabGNN/.venv/lib/python3.10/site-packages/torch_geometric/utils/_scatter.py:91: UserWarning: The usage of `scatter(reduce='min')` can be accelerated via the 'torch-scatter' package, but it was not found
+  warnings.warn(
+/user_data/TabGNN/reports/src/query_aware/run_qa_edge_ablation.py:771: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  scaler = GradScaler(enabled=(device.type == 'cuda'))
+/user_data/TabGNN/reports/src/query_aware/run_qa_edge_ablation.py:843: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with autocast(enabled=(device.type == 'cuda')):
