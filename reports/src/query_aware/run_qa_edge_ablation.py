@@ -72,7 +72,11 @@ ALL_EDGE_RELATIONS = [
 ]
 EDGE_ABBREV = ['tt', 'tc', 'tp', 'sp', 'cc', 'sc']
 
-RESULTS_DIR = str(PROJECT_DIR / "results" / "qa_edge_ablation")
+# Allow per-worker output dir override (avoids concurrent read-modify-write races
+# when multiple GPU workers run different ablation shards in parallel).
+RESULTS_DIR = os.environ.get(
+    "QA_ABLATION_RESULTS_DIR",
+    str(PROJECT_DIR / "results" / "qa_edge_ablation"))
 
 # --- Phase 1: Base TWIG training hyperparameters ---
 TWIG_HPS = {
@@ -1009,7 +1013,7 @@ def _run_eval_on_split(twig_state_dict, qa_state_dict, edges, dataset, key_field
     qa_model.eval()
 
     twig_model = DiffusionModel(embed_dim=embed_dim, hidden_channels=768,
-                                metadata=data_full.metadata(),
+                                metadata=data_filtered.metadata(),
                                 dropout=0.10, sage_aggr='min', hetero_aggr='max').to(device)
     twig_model.load_state_dict(twig_state_dict, strict=False)
     twig_model.eval()
@@ -1040,7 +1044,7 @@ def _run_eval_on_split(twig_state_dict, qa_state_dict, edges, dataset, key_field
     data_full     = data_full.to(device)
     data_filtered = data_filtered.to(device)
     with torch.no_grad():
-        tbl_fixed    = twig_model.forward(data_full.x_dict, data_full.edge_index_dict)
+        tbl_fixed    = twig_model.forward(data_filtered.x_dict, data_filtered.edge_index_dict)
         coarse_scores = torch.matmul(query_vecs, tbl_fixed.T)
     del twig_model; torch.cuda.empty_cache()
 
