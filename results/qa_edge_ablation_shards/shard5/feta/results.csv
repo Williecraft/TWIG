@@ -1,0 +1,11 @@
+config,code,binary,label,num_edges,kept_edges,QA_R@1,QA_R@5,QA_R@10,QA_MRR,QA_nDCG@10,TWIG_R@1,TWIG_R@5,TWIG_R@10,TWIG_MRR,twig_best_epoch,qa_best_epoch,elapsed_min
+A54,54,110110,tt + tc + sp + cc,4,"similar_table, has_column, same_page, similar_content",0.878,0.946,0.964,0.9077621328907018,0.9200408106272449,0.866,0.944,0.966,0.8993276723155617,,,22.4
+A55,55,110111,tt + tc + sp + cc + sc,5,"similar_table, has_column, same_page, similar_content, shared_column_name",0.864,0.944,0.966,0.9015243588769901,0.9160991629710576,0.852,0.946,0.968,0.8953461188308309,,,14.5
+A56,56,111000,tt + tc + tp,3,"similar_table, has_column, comes_from",0.862,0.928,0.954,0.893558986020366,0.9068804396575536,0.882,0.942,0.962,0.9092710614768374,,,13.8
+A57,57,111001,tt + tc + tp + sc,4,"similar_table, has_column, comes_from, shared_column_name",0.876,0.958,0.974,0.9129806015413157,0.9272014790697353,0.882,0.948,0.972,0.9107614171700356,,,14.6
+A58,58,111010,tt + tc + tp + cc,4,"similar_table, has_column, comes_from, similar_content",0.88,0.944,0.964,0.9094717164963043,0.921797041184435,0.882,0.952,0.972,0.9128021898149181,,,23.7
+A59,59,111011,tt + tc + tp + cc + sc,5,"similar_table, has_column, comes_from, similar_content, shared_column_name",0.898,0.956,0.968,0.9235165401245985,0.933658192447245,0.878,0.926,0.962,0.9027492817300969,,,21.6
+A60,60,111100,tt + tc + tp + sp,4,"similar_table, has_column, comes_from, same_page",0.88,0.946,0.97,0.9086742059690739,0.9227896892732638,0.858,0.944,0.96,0.8970109909174269,,,13.7
+A61,61,111101,tt + tc + tp + sp + sc,5,"similar_table, has_column, comes_from, same_page, shared_column_name",0.882,0.942,0.968,0.9087718022095379,0.9220041903750639,0.854,0.928,0.966,0.8903906330834997,,,17.7
+A62,62,111110,tt + tc + tp + sp + cc,5,"similar_table, has_column, comes_from, same_page, similar_content",0.89,0.944,0.966,0.9170883517975338,0.9278131055877825,0.85,0.938,0.96,0.8892675883082389,,,16.2
+A63,63,111111,tt + tc + tp + sp + cc + sc,6,"similar_table, has_column, comes_from, same_page, similar_content, shared_column_name",0.868,0.934,0.948,0.8965834399277437,0.9075103880105878,0.856,0.936,0.96,0.8926987415661307,,,21.1
