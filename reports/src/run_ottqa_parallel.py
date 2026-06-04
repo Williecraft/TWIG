@@ -22,6 +22,7 @@ import json
 import os
 import socket
 import subprocess
+import sys
 from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
@@ -98,7 +99,9 @@ def main():
             env["QA_ABLATION_RESULTS_DIR"] = str(out_dir)
             env["OMP_NUM_THREADS"] = str(args.omp_threads)
             env["PYTHONUNBUFFERED"] = "1"  # 即時 flush log（避免 block buffering 看不到進度）
-            cmd = ["python", str(RUNNER), "--datasets", args.dataset,
+            # 用 sys.executable 而非 "python"，確保子程序用「跑 launcher 的同一個
+            # Python」（venv），不依賴有沒有 source activate / PATH。
+            cmd = [sys.executable, str(RUNNER), "--datasets", args.dataset,
                    "--gpu", gpu, "--ablation", *[str(c) for c in codes]]
             print(f"  slot {slot-1}: gpu{gpu} p{p} -> {codes}")
             print(f"           QA_ABLATION_RESULTS_DIR={out_dir}")
