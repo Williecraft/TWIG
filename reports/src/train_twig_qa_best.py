@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-用 QA ablation 最佳邊配置重新訓練 TWIG base model，
-儲存為 checkpoints/{dataset}/model_qa_best_edges.pt
+用 QA ablation dev-best 邊配置重新訓練 TWIG + QA，儲存兩個 checkpoint：
+  checkpoints/{dataset}/model_qa_best_edges.pt      (TWIG)
+  checkpoints/{dataset}/model_qa_best_edges_qa.pt   (QA fine-tune)
 
-這是修正「Stage1 用 TWIG-best 邊 / Stage2 用 QA-best 邊」不一致問題的第一步。
-接著 train_query_aware_v2.py 應從 model_qa_best_edges.pt fine-tune。
+供 evaluate_full_corpus.py 載入後對全語料庫評估用。
+選邊原則：以 dev QA_R@10 選出（run_qa_edge_ablation.py 結果，不用 test）。
 
 Usage:
   cd reports/src && python train_twig_qa_best.py
-  cd reports/src && python train_twig_qa_best.py --datasets feta ottqa
+  cd reports/src && python train_twig_qa_best.py --datasets feta ottqa --gpu 0
 """
 
 import argparse
@@ -21,7 +22,6 @@ _p.add_argument('--gpu', type=int, default=0)
 _args, _ = _p.parse_known_args()
 os.environ['CUDA_VISIBLE_DEVICES'] = str(_args.gpu)
 
-import argparse
 import copy
 import json
 import random
@@ -36,21 +36,46 @@ from torch_geometric.data import HeteroData
 from torch_geometric.nn import GraphSAGE, to_hetero, GraphNorm
 from torch import nn
 from sentence_transformers import SentenceTransformer
-from tqdm import tqdm
 
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Import QA model and helpers from the ablation script (single source of truth)
+from query_aware.run_qa_edge_ablation import (
+    QueryAwareModel,
+    get_canonical_metadata,
+    load_pretrained_into_qa_model,
+    build_subgraph,
+    build_id_to_idx,
+    load_queries,
+    filter_edges,
+    QA_QUERY_EDGE_MODE,
+    QA_SUBGRAPH_K,
+    QA_COARSE_K_EVAL,
+    QA_NUM_EPOCHS,
+    QA_WARMUP_EPOCHS,
+    QA_BATCH_SIZE,
+    QA_NUM_HARD_NEGATIVES,
+    QA_EARLY_STOPPING_PATIENCE,
+    QA_BASE_LR,
+    QA_QUERY_LR,
+    QA_WEIGHT_DECAY,
+    QA_CLIP_GRAD_NORM,
+    QA_TEMP,
+    QA_LABEL_SMOOTH,
+)
+
 MODEL_NAME = 'BAAI/bge-m3'
 
-# QA ablation 最佳邊配置（與 train_query_aware_v2.py 的 BEST_EDGE_CONFIGS 一致）
+# dev-set selected best edge configs (run_qa_edge_ablation.py, dev QA_R@10)
 QA_BEST_EDGE_CONFIGS = {
-    "feta":    ["similar_table", "has_column", "comes_from", "same_page", "shared_column_name"],
-    "ottqa":   ["similar_table", "has_column", "comes_from", "same_page", "similar_content", "shared_column_name"],
-    "mimo_en": ["similar_table", "comes_from", "same_page", "shared_column_name"],
-    "mimo_ch": ["has_column", "comes_from", "same_page", "similar_content"],
-    "e2ewtq":  ["has_column", "shared_column_name"],
-    "mmqa":    ["has_column", "comes_from", "similar_content", "shared_column_name"],
+    "feta":    ['has_column', 'same_page'],                                             # A20 dev=0.9760
+    "ottqa":   ['similar_table', 'has_column', 'same_page', 'similar_content'],         # A54 dev=0.9982
+    "mimo_en": ['has_column', 'comes_from', 'same_page', 'similar_content',
+                'shared_column_name'],                                                   # A31 dev=0.7448
+    "mimo_ch": ['has_column', 'comes_from', 'same_page'],                               # A28 dev=0.7194
+    "e2ewtq":  ['has_column', 'comes_from'],                                            # A24 dev=0.9500
+    "mmqa":    ['has_column', 'shared_column_name'],                                    # A17 dev=0.8273
 }
 
 TWIG_HPS = {
@@ -80,38 +105,6 @@ def get_key_fields(dataset):
 
 def make_key(item, kf):
     return "|".join(str(item.get(f, "")) for f in kf)
-
-
-def filter_edges(data, keep_relations):
-    filtered = HeteroData()
-    for nt in data.node_types:
-        for attr in data[nt].keys():
-            filtered[nt][attr] = data[nt][attr]
-
-    fwd_to_rev = {
-        'has_column': 'rev_has_column', 'comes_from': 'rev_comes_from',
-        'similar_table': 'similar_table', 'same_page': 'same_page',
-        'similar_content': 'similar_content', 'shared_column_name': 'shared_column_name',
-    }
-    rev_to_fwd = {'rev_has_column': 'has_column', 'rev_comes_from': 'comes_from'}
-    keep = set()
-    for r in keep_relations:
-        keep.add(r)
-        if r in fwd_to_rev: keep.add(fwd_to_rev[r])
-
-    for et, ei in data.edge_index_dict.items():
-        _, rel, _ = et
-        if rel in keep or rev_to_fwd.get(rel, rel) in keep_relations:
-            filtered[et].edge_index = ei
-
-    dest_types = {dst for _, _, dst in filtered.edge_types} if filtered.edge_types else set()
-    for nt in filtered.node_types:
-        if nt not in dest_types:
-            filtered[nt, f'_self_loop_{nt}', nt].edge_index = torch.tensor([[0],[0]], dtype=torch.long)
-
-    if hasattr(data, 'metadata_maps'):
-        filtered.metadata_maps = data.metadata_maps
-    return filtered
 
 
 class DiffusionModel(nn.Module):
@@ -183,7 +176,7 @@ def train_twig(dataset, edges, device, embedder):
             if pos:
                 texts.append(q.strip()); pos_lists.append(pos)
 
-    print(f'  Embedding {len(texts)} train queries...')
+    print(f'  [TWIG] Embedding {len(texts)} train queries...')
     q_vecs = torch.tensor(embedder.encode(texts, show_progress_bar=False),
                           dtype=torch.float, device=device)
 
@@ -272,11 +265,11 @@ def train_twig(dataset, edges, device, embedder):
                 patience += 1
 
             if epoch % 5 == 0 or epoch == 1:
-                print(f'    Epoch {epoch:2d} | Loss {total_loss/max(1,n_batches):.4f} | '
+                print(f'  [TWIG] Epoch {epoch:2d} | Loss {total_loss/max(1,n_batches):.4f} | '
                       f'Val R@10 {r10:.4f} | Best {best_val_r10:.4f} (ep {best_epoch})')
 
             if patience >= EARLY_STOPPING_PATIENCE:
-                print(f'    Early stopping at epoch {epoch}')
+                print(f'  [TWIG] Early stopping at epoch {epoch}')
                 break
 
     if best_state:
@@ -284,10 +277,186 @@ def train_twig(dataset, edges, device, embedder):
     return copy.deepcopy(model.state_dict()), best_val_r10, best_epoch
 
 
+def train_qa(twig_state, dataset, edges, device, embedder):
+    """Fine-tune QA model from TWIG checkpoint. Delegates to ablation's train_qa_v2 logic."""
+    key_fields = get_key_fields(dataset)
+    train_query_path = str(PROJECT_DIR / f"data/table/train/{dataset}/query.jsonl")
+    val_graph_path   = str(PROJECT_DIR / f"data/processed/dev/{dataset}/graph.pt")
+    val_query_path   = str(PROJECT_DIR / f"data/table/dev/{dataset}/query.jsonl")
+
+    data_cpu = torch.load(PROJECT_DIR / f'data/processed/train/{dataset}/graph.pt',
+                          map_location='cpu', weights_only=False)
+    data_cpu = filter_edges(data_cpu, edges)
+    id_to_idx = build_id_to_idx(data_cpu, key_fields)
+    embed_dim = data_cpu['table'].x.size(1)
+
+    metadata = get_canonical_metadata(QA_QUERY_EDGE_MODE)
+    model = QueryAwareModel(embed_dim=embed_dim, hidden_channels=768, metadata=metadata,
+                            dropout=0.10, sage_aggr='min', hetero_aggr='max').to(device)
+    load_pretrained_into_qa_model(model, twig_state)
+
+    query_keywords = ['queries', 'rev_queries', 'queries_page', 'rev_queries_page',
+                      'queries_column', 'rev_queries_column']
+    base_params, query_params = [], []
+    for name, param in model.named_parameters():
+        (query_params if any(kw in name for kw in query_keywords) else base_params).append(param)
+
+    optimizer = optim.AdamW([{'params': base_params, 'lr': QA_BASE_LR},
+                              {'params': query_params, 'lr': QA_QUERY_LR}],
+                             weight_decay=QA_WEIGHT_DECAY)
+    warmup = LambdaLR(optimizer, lr_lambda=lambda e: min(1.0, (e+1)/float(QA_WARMUP_EPOCHS)))
+    cosine = CosineAnnealingLR(optimizer, T_max=QA_NUM_EPOCHS - QA_WARMUP_EPOCHS)
+    scheduler = SequentialLR(optimizer, [warmup, cosine], milestones=[QA_WARMUP_EPOCHS])
+    scaler = GradScaler(enabled=(device.type == 'cuda'))
+
+    texts, pos_lists = load_queries(train_query_path, id_to_idx, key_fields)
+    if not texts:
+        print(f'  [QA] No valid training queries for {dataset}'); return None
+
+    print(f'  [QA] Embedding {len(texts)} train queries...')
+    query_vecs = torch.tensor(embedder.encode(texts, show_progress_bar=False),
+                              dtype=torch.float, device=device)
+
+    val_data_cpu, val_query_vecs, val_pos_lists = None, None, None
+    if Path(val_graph_path).exists():
+        val_data_cpu = torch.load(val_graph_path, map_location='cpu', weights_only=False)
+        val_data_cpu = filter_edges(val_data_cpu, edges)
+        val_id_to_idx = build_id_to_idx(val_data_cpu, key_fields)
+        val_texts, val_pos_lists = load_queries(val_query_path, val_id_to_idx, key_fields)
+        if val_texts:
+            val_query_vecs = torch.tensor(embedder.encode(val_texts, show_progress_bar=False),
+                                          dtype=torch.float, device=device)
+
+    data = data_cpu.clone().to(device)
+    hard_neg_indices = None
+    best_val_recall, best_model_state, best_epoch, patience = -1.0, None, 0, 0
+
+    for epoch in range(1, QA_NUM_EPOCHS + 1):
+        if epoch == 1 or epoch % 2 == 0:
+            model.eval()
+            with torch.no_grad():
+                table_emb = model.forward(data.x_dict, data.edge_index_dict)
+                q_norm = F.normalize(query_vecs, p=2, dim=1)
+                all_negs = []
+                for start in range(0, len(query_vecs), 1024):
+                    end = min(start + 1024, len(query_vecs))
+                    sim = torch.matmul(q_norm[start:end], table_emb.T)
+                    for i in range(end - start):
+                        for pos_idx in pos_lists[start + i]:
+                            if 0 <= pos_idx < table_emb.size(0):
+                                sim[i, pos_idx] = -float('inf')
+                    _, topk = torch.topk(sim, k=min(QA_NUM_HARD_NEGATIVES, table_emb.size(0)-1), dim=1)
+                    all_negs.extend(topk.tolist())
+                hard_neg_indices = all_negs
+
+        model.train()
+        total_loss = 0.0; n_batches = 0
+        indices = list(range(len(query_vecs))); random.shuffle(indices)
+
+        with torch.no_grad():
+            base_table_emb = model.forward(data.x_dict, data.edge_index_dict)
+
+        for start in range(0, len(indices), QA_BATCH_SIZE):
+            end = min(start + QA_BATCH_SIZE, len(indices))
+            batch_idx = indices[start:end]
+            optimizer.zero_grad()
+            batch_loss = 0.0; batch_count = 0
+
+            with autocast(enabled=(device.type == 'cuda')):
+                for sample_idx in batch_idx:
+                    q_vec = query_vecs[sample_idx:sample_idx+1]
+                    pos_list = pos_lists[sample_idx]
+                    hard_negs_s = hard_neg_indices[sample_idx] if hard_neg_indices else []
+
+                    with torch.no_grad():
+                        scores = torch.matmul(F.normalize(q_vec, p=2, dim=1), base_table_emb.T).squeeze(0)
+                        _, top_k = torch.topk(scores, k=min(QA_SUBGRAPH_K, scores.size(0)))
+                        candidate_set = set(top_k.cpu().tolist())
+                    for idx in pos_list: candidate_set.add(idx)
+                    for idx in hard_negs_s:
+                        if idx >= 0: candidate_set.add(idx)
+
+                    subgraph, table_mapping = build_subgraph(
+                        data, q_vec, sorted(candidate_set),
+                        edge_mode=QA_QUERY_EDGE_MODE, device=device)
+                    sub_emb = model.forward(subgraph.x_dict, subgraph.edge_index_dict)
+                    pos_new_idx = table_mapping.get(pos_list[0], -1)
+                    if pos_new_idx == -1: continue
+
+                    logits = torch.matmul(F.normalize(q_vec, p=2, dim=1), sub_emb.T).squeeze(0) / QA_TEMP
+                    label = torch.tensor([pos_new_idx], dtype=torch.long, device=device)
+                    batch_loss += F.cross_entropy(logits.unsqueeze(0), label, label_smoothing=QA_LABEL_SMOOTH)
+                    batch_count += 1
+
+                if batch_count == 0: continue
+                loss = batch_loss / batch_count
+
+            scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=QA_CLIP_GRAD_NORM)
+            scaler.step(optimizer); scaler.update()
+            total_loss += loss.item(); n_batches += 1
+
+            if n_batches % 20 == 0:
+                with torch.no_grad():
+                    base_table_emb = model.forward(data.x_dict, data.edge_index_dict)
+
+        scheduler.step()
+
+        if val_data_cpu is not None and val_query_vecs is not None:
+            val_data = val_data_cpu.clone().to(device)
+            model.eval()
+            with torch.no_grad():
+                val_base_emb = model.forward(val_data.x_dict, val_data.edge_index_dict)
+                val_coarse = torch.matmul(F.normalize(val_query_vecs, p=2, dim=1), val_base_emb.T)
+                hits10 = 0
+                for qi in range(len(val_query_vecs)):
+                    pos_set = set(val_pos_lists[qi])
+                    q_vec = val_query_vecs[qi:qi+1]
+                    _, top_k = torch.topk(val_coarse[qi], k=min(QA_COARSE_K_EVAL, val_coarse.size(1)))
+                    candidates = top_k.cpu().tolist()
+                    for pi in pos_set:
+                        if pi not in set(candidates): candidates.append(pi)
+                    subgraph, table_mapping = build_subgraph(
+                        val_data, q_vec, candidates, edge_mode=QA_QUERY_EDGE_MODE, device=device)
+                    sub_emb = model.forward(subgraph.x_dict, subgraph.edge_index_dict)
+                    rerank = torch.matmul(F.normalize(q_vec, p=2, dim=1), sub_emb.T).squeeze(0)
+                    _, reranked = torch.topk(rerank, k=min(10, rerank.size(0)))
+                    new_to_old = {v: k for k, v in table_mapping.items()}
+                    if any(new_to_old[i.item()] in pos_set for i in reranked):
+                        hits10 += 1
+            del val_data; torch.cuda.empty_cache()
+            val_r10 = hits10 / max(1, len(val_query_vecs))
+
+            if val_r10 > best_val_recall:
+                best_val_recall = val_r10; best_epoch = epoch; patience = 0
+                best_model_state = copy.deepcopy(model.state_dict())
+            else:
+                patience += 1
+
+            if epoch % 3 == 0 or epoch == 1:
+                print(f'  [QA] Epoch {epoch:2d}/{QA_NUM_EPOCHS} | Loss {total_loss/max(1,n_batches):.4f} | '
+                      f'Val R@10 {val_r10:.4f} | Best {best_val_recall:.4f} (ep {best_epoch})')
+
+            if patience >= QA_EARLY_STOPPING_PATIENCE:
+                print(f'  [QA] Early stopping at epoch {epoch}'); break
+        else:
+            if epoch % 3 == 0 or epoch == 1:
+                print(f'  [QA] Epoch {epoch:2d}/{QA_NUM_EPOCHS} | Loss {total_loss/max(1,n_batches):.4f}')
+            best_model_state = copy.deepcopy(model.state_dict()); best_epoch = epoch
+
+    if best_model_state:
+        model.load_state_dict(best_model_state)
+    result = copy.deepcopy(model.state_dict())
+    del model, data, query_vecs
+    torch.cuda.empty_cache()
+    return result, best_val_recall, best_epoch
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--datasets', nargs='+',
-                        default=['feta','ottqa','mimo_en','mimo_ch','e2ewtq','mmqa'])
+                        default=['feta', 'ottqa', 'mimo_en', 'mimo_ch', 'e2ewtq', 'mmqa'])
     parser.add_argument('--gpu', type=int, default=0)
     args = parser.parse_args()
 
@@ -298,28 +467,48 @@ def main():
 
     for dataset in args.datasets:
         edges = QA_BEST_EDGE_CONFIGS[dataset]
-        save_path = PROJECT_DIR / f'checkpoints/{dataset}/model_qa_best_edges.pt'
+        ckpt_dir = PROJECT_DIR / f'checkpoints/{dataset}'
+        ckpt_dir.mkdir(parents=True, exist_ok=True)
+        twig_path = ckpt_dir / 'model_qa_best_edges.pt'
+        qa_path   = ckpt_dir / 'model_qa_best_edges_qa.pt'
 
         print(f'\n{"="*60}')
-        print(f'Training TWIG for {dataset} with QA-best edges')
-        print(f'  Edges: {edges}')
+        print(f'Dataset: {dataset.upper()}  edges: {edges}')
         print(f'{"="*60}')
 
-        state, best_r10, best_epoch = train_twig(dataset, edges, device, embedder)
-
+        # Phase 1: TWIG
+        print(f'\n  Phase 1: Training TWIG...')
+        twig_state, twig_r10, twig_ep = train_twig(dataset, edges, device, embedder)
         torch.save({
-            'model_state_dict': state,
+            'model_state_dict': twig_state,
             'hps': TWIG_HPS,
             'best_edges': edges,
-            'best_val_r10': best_r10,
-            'best_epoch': best_epoch,
-        }, save_path)
-        print(f'  Saved → {save_path}  (val R@10={best_r10:.4f}, epoch={best_epoch})')
+            'best_val_r10': twig_r10,
+            'best_epoch': twig_ep,
+        }, twig_path)
+        print(f'  TWIG saved → {twig_path}  (val R@10={twig_r10:.4f}, epoch={twig_ep})')
 
-        del state; torch.cuda.empty_cache()
+        # Phase 2: QA fine-tune
+        print(f'\n  Phase 2: Fine-tuning QA...')
+        result = train_qa(twig_state, dataset, edges, device, embedder)
+        if result is not None:
+            qa_state, qa_r10, qa_ep = result
+            torch.save({
+                'model_state_dict': qa_state,
+                'hps': TWIG_HPS,
+                'best_edges': edges,
+                'edge_mode': QA_QUERY_EDGE_MODE,
+                'best_val_r10': qa_r10,
+                'best_epoch': qa_ep,
+            }, qa_path)
+            print(f'  QA saved  → {qa_path}  (val R@10={qa_r10:.4f}, epoch={qa_ep})')
+        else:
+            print(f'  QA training failed for {dataset}')
+
+        del twig_state; torch.cuda.empty_cache()
 
     del embedder
-    print('\nDone.')
+    print('\nAll done.')
 
 
 if __name__ == '__main__':
