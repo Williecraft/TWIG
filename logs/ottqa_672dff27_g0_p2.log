@@ -1,0 +1,71 @@
+Traceback (most recent call last):
+  File "/user_data/TabGNN/reports/src/query_aware/run_qa_edge_ablation.py", line 44, in <module>
+    from torch_geometric.data import HeteroData
+ModuleNotFoundError: No module named 'torch_geometric'
+Using GPU: 0
+Datasets: ['ottqa']
+Ablation configs: 3 configurations
+Total experiments: 3
+Device: cuda
+Loading sentence embedder...
+
+======================================================================
+  DATASET: OTTQA
+======================================================================
+  Configs to run: 3
+
+  =================================================================
+  [A30] tc + tp + sp + cc
+  Binary: 011110 | Edges: 4/6 | Dataset: ottqa
+  =================================================================
+    Phase 1: Training TWIG base model...
+    [TWIG] Embedding 41468 train queries...
+
+  ERROR in A30: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 23.62 GiB of which 7.12 MiB is free. Process 5897 has 14.88 GiB memory in use. Process 11265 has 2.48 GiB memory in use. Process 11264 has 3.77 GiB memory in use. Process 11266 has 2.49 GiB memory in use. Of the allocated memory 2.29 GiB is allocated by PyTorch, and 7.14 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+Traceback (most recent call last):
+  File "/user_data/TabGNN/reports/src/query_aware/run_qa_edge_ablation.py", line 1322, in main
+    result = run_single_ablation(config_code, dataset, device, embedder)
+  File "/user_data/TabGNN/reports/src/query_aware/run_qa_edge_ablation.py", line 1228, in run_single_ablation
+    twig_state = train_twig(edges, dataset, key_fields, device, embedder)
+  File "/user_data/TabGNN/reports/src/query_aware/run_qa_edge_ablation.py", line 366, in train_twig
+    embedder.encode(dev_texts, show_progress_bar=False),
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+    return func(*args, **kwargs)
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/sentence_transformers/SentenceTransformer.py", line 1094, in encode
+    out_features = self.forward(features, **kwargs)
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/sentence_transformers/SentenceTransformer.py", line 1175, in forward
+    input = module(input, **module_kwargs)
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/sentence_transformers/models/Transformer.py", line 262, in forward
+    outputs = self.auto_model(**trans_features, **kwargs, return_dict=True)
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/transformers/models/xlm_roberta/modeling_xlm_roberta.py", line 789, in forward
+    embedding_output = self.embeddings(
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/transformers/models/xlm_roberta/modeling_xlm_roberta.py", line 112, in forward
+    token_type_embeddings = self.token_type_embeddings(token_type_ids)
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1776, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1787, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/torch/nn/modules/sparse.py", line 191, in forward
+    return F.embedding(
+  File "/user_data/TabGNN/.venv/lib/python3.10/site-packages/torch/nn/functional.py", line 2567, in embedding
+    return torch.embedding(weight, input, padding_idx, scale_grad_by_freq, sparse)
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 23.62 GiB of which 7.12 MiB is free. Process 5897 has 14.88 GiB memory in use. Process 11265 has 2.48 GiB memory in use. Process 11264 has 3.77 GiB memory in use. Process 11266 has 2.49 GiB memory in use. Of the allocated memory 2.29 GiB is allocated by PyTorch, and 7.14 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+
+  =================================================================
+  [A31] tc + tp + sp + cc + sc
+  Binary: 011111 | Edges: 5/6 | Dataset: ottqa
+  =================================================================
+    Phase 1: Training TWIG base model...
+    [TWIG] Embedding 41468 train queries...

@@ -1,0 +1,11 @@
+config,code,binary,label,num_edges,kept_edges,QA_R@1,QA_R@5,QA_R@10,QA_MRR,QA_nDCG@10,TWIG_R@1,TWIG_R@5,TWIG_R@10,TWIG_MRR,twig_best_epoch,qa_best_epoch,elapsed_min
+A44,44,101100,tt + tp + sp,3,"similar_table, comes_from, same_page",0.89,0.94,0.962,0.9150236286374444,0.92554524041444,0.87,0.934,0.96,0.9006913215112222,,,18.2
+A45,45,101101,tt + tp + sp + sc,4,"similar_table, comes_from, same_page, shared_column_name",0.874,0.94,0.956,0.9040923794540915,0.9160570999728177,0.862,0.938,0.958,0.8984296294536537,,,18.8
+A46,46,101110,tt + tp + sp + cc,4,"similar_table, comes_from, same_page, similar_content",0.89,0.944,0.968,0.914265203586111,0.9262512931497381,0.88,0.938,0.964,0.9061385644363669,,,23.5
+A47,47,101111,tt + tp + sp + cc + sc,5,"similar_table, comes_from, same_page, similar_content, shared_column_name",0.89,0.946,0.964,0.9168026460403432,0.9271481587306701,0.874,0.932,0.954,0.9027724473787198,,,14.0
+A48,48,110000,tt + tc,2,"similar_table, has_column",0.878,0.952,0.966,0.9104661429032308,0.9227524032164998,0.874,0.956,0.968,0.9087283153177674,,,15.3
+A49,49,110001,tt + tc + sc,3,"similar_table, has_column, shared_column_name",0.864,0.944,0.974,0.899347421889704,0.9163397101281934,0.852,0.93,0.97,0.890482976856945,,,20.9
+A50,50,110010,tt + tc + cc,3,"similar_table, has_column, similar_content",0.87,0.948,0.96,0.9027898158568373,0.915889147162558,0.86,0.95,0.974,0.9007115982489895,,,18.2
+A51,51,110011,tt + tc + cc + sc,4,"similar_table, has_column, similar_content, shared_column_name",0.874,0.948,0.966,0.9060126029527151,0.9193732376929823,0.854,0.938,0.966,0.8934800964515359,,,15.7
+A52,52,110100,tt + tc + sp,3,"similar_table, has_column, same_page",0.892,0.94,0.968,0.9178154625315531,0.9287816694432149,0.866,0.942,0.964,0.9003304457604913,,,16.3
+A53,53,110101,tt + tc + sp + sc,4,"similar_table, has_column, same_page, shared_column_name",0.868,0.944,0.964,0.9015088482552879,0.9154805582617909,0.834,0.938,0.968,0.8811985268763765,,,14.3

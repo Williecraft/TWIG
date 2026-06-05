@@ -1,5 +1,13 @@
 # 實驗紀錄
 
+> ⚠️ **已過時（2026-06-03 標註）**：本文件記錄的是修正前的舊管線，其中
+> **選邊是在 test set 上做的（資料洩漏）**、粗排用 `model_best_edges.pt`（與
+> 精排邊不一致），且 QA 評估的粗排在「全圖」上跑（coarse retrieval pollution
+> bug，已於 commit `c62b65c` 修正）。因此**下方所有 QA/TWIG 分數與最佳邊配置
+> 都不可信**，僅保留作為歷史紀錄與「計算成本量測（第三節）」的方法參考。
+> 正確的 dev-選邊 / test-報告 / alpha=0 / 粗排精排同一組邊 結果，請見修正後重跑
+> 的 `results/qa_edge_ablation/` 與 `summarize_ablation.py` 輸出。
+
 > 本文件整理本次對話中所有實驗修改、執行過程與跑出來的分數。
 
 ---
