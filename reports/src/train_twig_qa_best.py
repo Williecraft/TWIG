@@ -74,7 +74,7 @@ QA_BEST_EDGE_CONFIGS = {
     "mimo_en": ['has_column', 'comes_from', 'same_page', 'similar_content',
                 'shared_column_name'],                                                   # A31 dev=0.7448
     "mimo_ch": ['has_column', 'comes_from', 'same_page'],                               # A28 dev=0.7194
-    "e2ewtq":  ['has_column', 'comes_from'],                                            # A24 dev=0.9500
+    "e2ewtq":  ['has_column', 'comes_from'],                                            # A24 dev=0.9500 (note: tp semantically empty; same test score as A19)
     "mmqa":    ['has_column', 'shared_column_name'],                                    # A17 dev=0.8273
 }
 

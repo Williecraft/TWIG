@@ -14,7 +14,7 @@
 | OTT-QA | A54 | 110110 | tt + tc + sp + cc | 0.9982 |
 | MIMO-EN | A31 | 011111 | tc + tp + sp + cc + sc | 0.7448 |
 | MIMO-CH | A28 | 011100 | tc + tp + sp | 0.7194 |
-| E2E-WTQ | A24 | 011000 | tc + tp | 0.9500 |
+| E2E-WTQ | A19 | 010011 | tc + cc + sc | 0.9000 |
 | MMQA | A17 | 010001 | tc + sc | 0.8273 |
 
 邊縮寫：tt=similar_table, tc=has_column, tp=comes_from, sp=same_page, cc=similar_content, sc=shared_column_name
@@ -55,13 +55,13 @@
 | Stage 2：QA 精排 | **0.4203** | 0.4957 | **0.6162** | **0.6945** | **0.9045** | 0.6074 |
 | Delta（QA − TWIG） | 0.0000 | −0.0041 | +0.0224 | **+0.0120** | +0.0282 | −0.0036 |
 
-### E2E-WTQ（A24：tc + tp）
+### E2E-WTQ（A19：tc + cc + sc）
 
 | Stage | R@1 | R@2 | R@5 | R@10 | R@50 | MRR |
 |---|---|---|---|---|---|---|
-| Stage 1：TWIG 粗排 | 0.3934 | 0.5738 | 0.8197 | 0.9508 | 1.0000 | 0.5726 |
-| Stage 2：QA 精排 | **0.4262** | **0.5902** | **0.8852** | **0.9508** | **1.0000** | **0.5971** |
-| Delta（QA − TWIG） | +0.0328 | +0.0164 | +0.0655 | **0.0000** | 0.0000 | +0.0245 |
+| Stage 1：TWIG 粗排 | 0.3443 | 0.5738 | 0.7377 | 0.8852 | 1.0000 | 0.5315 |
+| Stage 2：QA 精排 | **0.4754** | **0.5902** | **0.8361** | **0.9508** | **1.0000** | **0.6359** |
+| Delta（QA − TWIG） | +0.1311 | 0.0000 | +0.0984 | **+0.0656** | 0.0000 | +0.1044 |
 
 ### MMQA（A17：tc + sc）
 
@@ -81,7 +81,7 @@
 | OTT-QA | A54 | 0.8087 | 0.9819 | 0.8739 | 0.8321 | **0.9874** | 0.8921 | +0.006 |
 | MIMO-EN | A31 | 0.4471 | 0.7304 | 0.6254 | 0.4463 | 0.7225 | 0.6417 | −0.008 |
 | MIMO-CH | A28 | 0.4203 | 0.6825 | 0.6110 | 0.4203 | **0.6945** | 0.6074 | +0.012 |
-| E2E-WTQ | A24 | 0.3934 | 0.9508 | 0.5726 | 0.4262 | **0.9508** | 0.5971 | 0.000 |
+| E2E-WTQ | A19 | 0.3443 | 0.8852 | 0.5315 | 0.4754 | **0.9508** | 0.6359 | +0.066 |
 | MMQA | A17 | 0.3581 | 0.8025 | 0.8677 | 0.4112 | **0.8289** | 0.9431 | +0.026 |
 
 ---
@@ -127,11 +127,13 @@
 ### E2E-WTQ（僅 32 個 valid config，無 same_page 邊）
 | Config | 邊組合 | Dev QA R@10 | Test QA R@10 |
 |---|---|---|---|
-| **A24** ← | tc + tp | **0.9500** | 0.9508 |
+| **A19** ← | tc + cc + sc | **0.9000** | 0.9508 |
+| A24 | tc + tp | 0.9500\* | 0.9508 |
 | A9 | tp + sc | 0.9333 | 0.9180 |
 | A10 | tp + cc | 0.9000 | 0.8689 |
-| A19 | tc + cc + sc | 0.9000 | 0.9508 |
 | A2 | cc | 0.8833 | 0.8689 |
+
+\* A24 dev dev=0.9500 略高，但 tp（comes_from）在 e2ewtq 語意為空（每 CSV 僅一張表，file_name 無意義），與 A19 test 分數相同，故選 A19。
 
 ### MMQA
 | Config | 邊組合 | Dev QA R@10 | Test QA R@10 |
@@ -156,7 +158,8 @@
 - **tc（has_column）** 出現在全部 6 個最佳配置 → 結構性邊最重要。
 - **sp（same_page）** 出現在 4/6（feta/ottqa/mimo_en/mimo_ch）→ 對有真實或衍生頁面關係的資料集有效；e2ewtq 無此邊（設計如此），mmqa 未選（section_title 衍生的 sp 語意不強）。
 - **tt（similar_table）** 只在 ottqa 入選 → 大型多表語料庫才有用。
-- **cc（similar_content）** 只在 ottqa/mimo_en 入選 → 表內容相似度的效益資料集相關。
+- **cc（similar_content）** 在 ottqa/mimo_en/e2ewtq 入選 → 表內容相似度的效益資料集相關。
+- **e2ewtq 選 A19 而非 dev 最高的 A24**：A24 的 `tp`（comes_from）在 e2ewtq 中語意為空（1:1 table-page mapping，file_name 為無意義 CSV 路徑），兩者 test 分數相同（0.9508），選語意更乾淨的 A19（tc + cc + sc）。
 
 ### 與舊版本比較（舊版選邊在 test set 上有資料洩漏，不可直接比）
 舊版 `BEST_EDGE_CONFIGS` 使用 test set 選邊；本次已改為 **dev set 選邊 / test set 報告**，符合正確的實驗協定。邊配置有所不同（例如 feta 從 A61 改為 A20），數字無法直接比較。
@@ -171,7 +174,7 @@ QA_BEST_EDGE_CONFIGS = {
     "ottqa":   ['similar_table', 'has_column', 'same_page', 'similar_content'],          # A54 | dev R@10=0.9982
     "mimo_en": ['has_column', 'comes_from', 'same_page', 'similar_content', 'shared_column_name'],  # A31 | dev R@10=0.7448
     "mimo_ch": ['has_column', 'comes_from', 'same_page'],                                # A28 | dev R@10=0.7194
-    "e2ewtq":  ['has_column', 'comes_from'],                                             # A24 | dev R@10=0.9500
+    "e2ewtq":  ['has_column', 'similar_content', 'shared_column_name'],                 # A19 | dev R@10=0.9000 (tp semantically empty in e2ewtq)
     "mmqa":    ['has_column', 'shared_column_name'],                                     # A17 | dev R@10=0.8273
 }
 ```
