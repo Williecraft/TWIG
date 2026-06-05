@@ -38,11 +38,19 @@ def make_key(item, key_fields):
     return "|".join(str(item.get(f, "")) for f in key_fields)
 
 
-def build_table_docs(table_path, key_fields):
-    """完全照 build_graph.py 的 table node 文字組成，回傳 (docs, ids)（去重、跳過無 header）。"""
+def build_table_docs(table_paths, key_fields, include_title=True):
+    """完全照 build_graph.py 的 table node 文字組成，回傳 (docs, ids)（跨多檔去重、跳過無 header）。
+
+    table_paths 可為單一路徑或路徑清單；多檔時用於組「真實 corpus」(train+dev+test 全表當候選池)。
+    """
+    if isinstance(table_paths, (str, Path)):
+        table_paths = [table_paths]
     docs, ids, seen = [], [], set()
-    with open(table_path, "r", encoding="utf-8") as f:
-        for line in f:
+    for table_path in table_paths:
+        if not Path(table_path).exists():
+            continue
+        with open(table_path, "r", encoding="utf-8") as f:
+          for line in f:
             try:
                 item = json.loads(line)
                 header_list = item.get("header")
@@ -58,13 +66,21 @@ def build_table_docs(table_path, key_fields):
                 page_title = (metadata.get("table_page_title") or metadata.get("title")
                               or metadata.get("table_section_title") or item.get("file_name")
                               or f"__UNKNOWN_PAGE_{table_id}__")
-                table_doc = " ".join(filter(None, [
-                    f"Page: {page_title}",
-                    f"Sheet: {item.get('sheet_name', '')}",
-                    f"Section: {metadata.get('table_section_title', '')}",
-                    f"Columns: {', '.join(header_list)}",
-                    f"Data: {'; '.join([', '.join(row) for row in instance_rows[:5]])}",
-                ]))
+                if include_title:
+                    fields = [
+                        f"Page: {page_title}",
+                        f"Sheet: {item.get('sheet_name', '')}",
+                        f"Section: {metadata.get('table_section_title', '')}",
+                        f"Columns: {', '.join(header_list)}",
+                        f"Data: {'; '.join([', '.join(row) for row in instance_rows[:5]])}",
+                    ]
+                else:
+                    # 對齊 QGpT：排除所有標題（Page/Sheet/Section），只留 headers + 內容
+                    fields = [
+                        f"Columns: {', '.join(header_list)}",
+                        f"Data: {'; '.join([', '.join(row) for row in instance_rows[:5]])}",
+                    ]
+                table_doc = " ".join(filter(None, fields))
                 docs.append(table_doc)
                 ids.append(table_id)
             except Exception:
@@ -108,18 +124,22 @@ def reciprocal_rank(retrieved, relevant):
     return 0.0
 
 
-def evaluate_dataset(dataset, embedder, split, batch_size):
+def evaluate_dataset(dataset, embedder, split, batch_size, corpus="test", include_title=True):
     import torch
-    import torch.nn.functional as F
 
     key_fields = get_key_fields(dataset)
-    table_path = PROJECT_DIR / f"data/table/{split}/{dataset}/table.jsonl"
     query_path = PROJECT_DIR / f"data/table/{split}/{dataset}/query.jsonl"
-    if not table_path.exists() or not query_path.exists():
-        print(f"  [{dataset}] 缺檔，跳過")
+    if corpus == "all":
+        # 真實檢索：候選池 = train+dev+test 全表（test gold + 其餘當干擾）
+        table_paths = [PROJECT_DIR / f"data/table/{sp}/{dataset}/table.jsonl"
+                       for sp in ("train", "dev", "test")]
+    else:
+        table_paths = [PROJECT_DIR / f"data/table/{split}/{dataset}/table.jsonl"]
+    if not query_path.exists():
+        print(f"  [{dataset}] 缺 query，跳過")
         return None
 
-    docs, ids = build_table_docs(table_path, key_fields)
+    docs, ids = build_table_docs(table_paths, key_fields, include_title=include_title)
     mapping_keys = set(ids)
     queries = parse_queries(query_path, mapping_keys, key_fields)
     questions = [q for q, _ in queries]
@@ -183,9 +203,17 @@ def main():
     ap.add_argument("--datasets", nargs="+", default=DATASETS)
     ap.add_argument("--gpu", type=int, default=1)
     ap.add_argument("--split", default="test")
+    ap.add_argument("--corpus", choices=["test", "all"], default="test",
+                    help="test=只用 test 表(全 gold,易);all=train+dev+test 全表當候選池(真實檢索)")
+    ap.add_argument("--no-title", action="store_true",
+                    help="排除 Page/Sheet/Section 標題（對齊 QGpT：titles excluded）")
     ap.add_argument("--batch-size", type=int, default=64)
-    ap.add_argument("--output", default=str(PROJECT_DIR / "reports" / "bgem3_baseline.md"))
+    ap.add_argument("--output", default=None)
     args = ap.parse_args()
+    if args.output is None:
+        suffix = "_realcorpus" if args.corpus == "all" else ""
+        suffix += "_notitle" if args.no_title else ""
+        args.output = str(PROJECT_DIR / "reports" / f"bgem3_baseline{suffix}.md")
 
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
     import torch
@@ -199,7 +227,8 @@ def main():
     rows = []
     for ds in args.datasets:
         print(f"=== {ds} ===")
-        r = evaluate_dataset(ds, embedder, args.split, args.batch_size)
+        r = evaluate_dataset(ds, embedder, args.split, args.batch_size, corpus=args.corpus,
+                             include_title=not args.no_title)
         if r:
             rows.append(r)
             print(f"  tables={r['n_tables']} queries={r['n_queries']}(eval {r['eval_count']}) "
@@ -217,6 +246,9 @@ def write_markdown(rows, args, gpu_name, device):
     lines.append("## 設定\n")
     lines.append(f"- Embedding model：`{MODEL_NAME}`")
     lines.append(f"- 方法：純 dense retrieval（cosine top-K），**不建圖、不跑 GNN**")
+    corpus_desc = ("**train+dev+test 全表當候選池（真實檢索，含干擾表）**" if args.corpus == "all"
+                   else "只用 test 表（注意：此池每張都是某 query 的 gold，無干擾，極易）")
+    lines.append(f"- 檢索候選池（corpus）：{corpus_desc}")
     lines.append(f"- table 文字組成：與 `build_graph.py` table node 完全一致（Page / Sheet / "
                  f"Section / Columns / 前 5 列）")
     lines.append(f"- 指標：Recall@k = 找回的 gold 表格比例（同 `evaluate_retrieval.py`），"
