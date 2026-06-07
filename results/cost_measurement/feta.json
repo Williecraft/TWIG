@@ -12,6 +12,17 @@
       "total_s": 14.5832,
       "per_query_ms": 1.991
     },
+    "twig_qa": {
+      "total_s": 117.9543,
+      "per_query_ms": 16.105,
+      "rerank_per_query_ms": 16.105,
+      "sample_size": 300,
+      "repeats": [
+        117.69224365295221,
+        117.95426369152808,
+        118.88839746088411
+      ]
+    },
     "gnn_overhead_s": 0.1068,
     "gnn_overhead_pct": 0.7
   }

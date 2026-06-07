@@ -1,0 +1,24 @@
+{
+  "hardware": {
+    "gpu": "NVIDIA TITAN RTX",
+    "vram_gb": 23.6,
+    "cpu": "Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz",
+    "ram_gb": 125.7
+  },
+  "online": {
+    "TWIG-QA": {
+      "method": "TWIG-QA",
+      "n_queries": 7324,
+      "n_tables": 7326,
+      "total_s": 117.9543,
+      "per_query_ms": 16.105,
+      "rerank_per_query_ms": 16.105,
+      "sample_size": 300,
+      "repeats": [
+        117.69224365295221,
+        117.95426369152808,
+        118.88839746088411
+      ]
+    }
+  }
+}

@@ -28,6 +28,7 @@ import csv
 from pathlib import Path
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--dataset', default='feta')
 parser.add_argument('--gpu', type=int, default=0)
 parser.add_argument('--qgpt-sample', type=int, default=50)
 parser.add_argument('--twig-only', action='store_true')
@@ -48,7 +49,7 @@ from sentence_transformers import SentenceTransformer
 PROJECT_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(Path(__file__).parent))
 
-DATASET    = 'feta'
+DATASET    = args.dataset
 SOURCE     = f'train/{DATASET}'
 MODEL_NAME = 'BAAI/bge-m3'
 RESULT_DIR = PROJECT_DIR / 'results' / 'cost_measurement'
@@ -97,7 +98,7 @@ def make_key(item, key_fields):
     return '|'.join(str(item.get(f, '')) for f in key_fields)
 
 
-KEY_FIELDS = ('sheet_name', 'file_name')
+KEY_FIELDS = ('sheet_name', 'file_name') if DATASET in ('ottqa', 'feta', 'e2ewtq') else ('id',)
 
 
 # ══════════════════════════════════════════════════════
